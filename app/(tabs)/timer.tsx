@@ -27,7 +27,7 @@ const COLORS = {
 };
 
 const SIZES = {
-  circle: 260,
+  circle: 300,
   stroke: 16,
   padding: 24,
   buttonHeight: 56,
@@ -202,12 +202,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 2,
     textTransform: 'uppercase',
-    marginBottom: 100, 
+    marginBottom: 120, 
   },
   circleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 100, // 20px below circle
+    marginBottom: 120, // 20px below circle
   },
   circle: {
     position: 'absolute',
