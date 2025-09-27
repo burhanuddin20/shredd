@@ -7,6 +7,8 @@ import {
   UserProfile,
 } from '@/constants/game';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import {
   Alert,
   Dimensions,
@@ -19,6 +21,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
+
 
 const { width } = Dimensions.get('window');
 
@@ -42,11 +45,18 @@ const SIZES = {
 };
 
 const FONTS = {
-  oswaldBold: Platform.OS === 'ios' ? 'Oswald-Bold' : 'Oswald_Bold',
-  oswaldMedium: Platform.OS === 'ios' ? 'Oswald-Medium' : 'Oswald_Medium',
-  oswaldSemiBold: Platform.OS === 'ios' ? 'Oswald-SemiBold' : 'Oswald_SemiBold',
+  heading: Platform.OS === 'ios' ? 'Anton-Regular' : 'Anton_400Regular',
   monoBold: Platform.OS === 'ios' ? 'RobotoMono-Bold' : 'RobotoMono_Bold',
 };
+
+
+// const FONTS = {
+//   oswaldBold: Platform.OS === 'ios' ? 'Oswald-Bold' : 'Oswald_Bold',
+//   oswaldMedium: Platform.OS === 'ios' ? 'Oswald-Medium' : 'Oswald_Medium',
+//   oswaldSemiBold: Platform.OS === 'ios' ? 'Oswald-SemiBold' : 'Oswald_SemiBold',
+//   monoBold: Platform.OS === 'ios' ? 'RobotoMono-Bold' : 'RobotoMono_Bold',
+// };
+
 
 // Mock user data
 const mockUser: UserProfile = {
@@ -64,6 +74,11 @@ const mockUser: UserProfile = {
 };
 
 export default function HomeScreen() {
+  // Load fonts
+  const [fontsLoaded] = useFonts({
+    Anton_400Regular,
+  });
+
   // Timer state
   const [currentFast, setCurrentFast] = useState<Fast | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(0);
@@ -160,6 +175,10 @@ export default function HomeScreen() {
       .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  if (!fontsLoaded) {
+    return null; // or a loading component
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -224,7 +243,6 @@ export default function HomeScreen() {
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>RANK</Text>
               <Text style={styles.statValue}>{rankName}</Text>
-              <Text style={styles.usernameSmall}>{user.username}</Text>
             </View>
           </View>
         </View>
@@ -262,13 +280,17 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     alignItems: 'center',
   },
+
   homeTitle: {
-    fontSize: 28,
-    fontFamily: FONTS.oswaldBold,
-    color: COLORS.textSecondary,
-    fontWeight: 'bold',
+    fontSize: 36, // slightly larger
+    fontFamily: FONTS.heading, // Anton
+    color: COLORS.textSecondary, // olive
     letterSpacing: 2,
     textTransform: 'uppercase',
+    fontWeight: 'bold',
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1, // subtle depth, not glow
   },
   currentFastSection: {
     paddingHorizontal: 16,
@@ -277,7 +299,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 20,
-    fontFamily: FONTS.oswaldBold,
+    fontFamily: FONTS.heading,
     color: COLORS.textSecondary,
     fontWeight: 'bold',
     letterSpacing: 1,
@@ -296,18 +318,18 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontSize: 48,
-    fontFamily: FONTS.monoBold,
-    lineHeight: 56,
+    fontFamily: FONTS.heading,
+    lineHeight: 66,
     color: COLORS.textPrimary,
     letterSpacing: 1,
-    fontWeight: 'bold',
+    fontWeight: '500',
   },
   planText: {
     fontSize: 16,
-    fontFamily: FONTS.oswaldMedium,
+    fontFamily: FONTS.heading,
     color: COLORS.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    letterSpacing: 1.1,
     marginTop: 12,
   },
   statsRow: {
@@ -328,7 +350,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    fontFamily: FONTS.oswaldMedium,
+    fontFamily: FONTS.heading,
     color: COLORS.textSecondary,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -336,13 +358,13 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 20,
-    fontFamily: FONTS.oswaldBold,
+    fontFamily: FONTS.heading,
     color: COLORS.textPrimary,
     fontWeight: 'bold',
   },
   usernameSmall: {
     fontSize: 12,
-    fontFamily: FONTS.oswaldMedium,
+    fontFamily: FONTS.heading,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -353,8 +375,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   leaderboardLabel: {
-    fontSize: 16,
-    fontFamily: FONTS.oswaldBold,
+    fontSize: 25,
+    fontFamily: FONTS.heading,
     color: COLORS.textSecondary,
     fontWeight: 'bold',
     letterSpacing: 1,
@@ -363,7 +385,7 @@ const styles = StyleSheet.create({
   },
   leaderboardPosition: {
     fontSize: 18,
-    fontFamily: FONTS.oswaldBold,
+    fontFamily: FONTS.heading,
     color: COLORS.textPrimary,
     fontWeight: 'bold',
     textTransform: 'uppercase',
@@ -379,11 +401,11 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   actionButtonText: {
-    fontSize: 18,
-    fontFamily: FONTS.oswaldSemiBold,
+    fontSize: 20,
+    fontFamily: FONTS.heading,
+    fontWeight: 'bold',
     color: COLORS.buttonText,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    fontWeight: 'bold',
   },
 });
