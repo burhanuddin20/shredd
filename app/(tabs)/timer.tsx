@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,8 +14,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
-const CIRCLE_SIZE = width * 0.7;
-const STROKE_WIDTH = 8;
+
+// 🎨 Theme constants (centralized for consistency)
+const COLORS = {
+  background: '#0B0C0C',
+  textPrimary: '#726a50',
+  textSecondary: '#2e3a18',
+  buttonBg: '#4B5320',
+  progressTrack: '#1A1A1A',
+  progressFill: '#2e3a18',
+  buttonText: '#0B0C0C',
+};
+
+const SIZES = {
+  circle: 260,
+  stroke: 16,
+  padding: 24,
+  buttonHeight: 56,
+  buttonRadius: 10,
+};
+
+const FONTS = {
+  oswaldBold: Platform.OS === 'ios' ? 'Oswald-Bold' : 'Oswald_Bold',
+  oswaldMedium: Platform.OS === 'ios' ? 'Oswald-Medium' : 'Oswald_Medium',
+  oswaldSemiBold: Platform.OS === 'ios' ? 'Oswald-SemiBold' : 'Oswald_SemiBold',
+  monoBold: Platform.OS === 'ios' ? 'RobotoMono-Bold' : 'RobotoMono_Bold',
+};
 
 // Mock current fast - in real app this would come from storage/state
 const mockCurrentFast: Fast | null = {
@@ -35,7 +60,7 @@ export default function TimerScreen() {
   const plan = FASTING_PLANS.find(p => p.id === currentFast?.planId || '16:8');
   const totalSeconds = (plan?.fastingHours || 16) * 60 * 60;
   const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
-  const circumference = 2 * Math.PI * (CIRCLE_SIZE / 2 - STROKE_WIDTH / 2);
+  const circumference = 2 * Math.PI * (SIZES.circle / 2 - SIZES.stroke / 2);
 
   const completeFast = useCallback(() => {
     if (currentFast && plan) {
@@ -111,56 +136,50 @@ export default function TimerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top Label */}
-      <Text style={styles.topLabel}>FASTING</Text>
+      <View style={styles.mainContainer}>
+        <Text style={styles.topLabel}>FASTING</Text>
 
-      {/* Central Progress Ring */}
-      <View style={styles.circleContainer}>
-        <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={styles.circle}>
-          {/* Background Circle */}
-          <Circle
-            cx={CIRCLE_SIZE / 2}
-            cy={CIRCLE_SIZE / 2}
-            r={CIRCLE_SIZE / 2 - STROKE_WIDTH / 2}
-            stroke="#2A2A2A"
-            strokeWidth={STROKE_WIDTH}
-            fill="transparent"
-          />
-          {/* Progress Circle */}
-          <Circle
-            cx={CIRCLE_SIZE / 2}
-            cy={CIRCLE_SIZE / 2}
-            r={CIRCLE_SIZE / 2 - STROKE_WIDTH / 2}
-            stroke="#6B705C"
-            strokeWidth={STROKE_WIDTH}
-            fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * (1 - progress)}
-            strokeLinecap="round"
-            transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
-          />
-        </Svg>
-        
-        {/* Timer Text Inside Circle */}
-        <View style={styles.timerTextContainer}>
-          <Text style={styles.timerText}>
-            {formatTime(timeRemaining)}
-          </Text>
-          {plan && (
-            <Text style={styles.planText}>
-              {plan.fastingHours} HR FAST
-            </Text>
-          )}
+        {/* Progress Ring */}
+        <View style={styles.circleContainer}>
+          <Svg width={SIZES.circle} height={SIZES.circle} style={styles.circle}>
+            {/* Background Circle */}
+            <Circle
+              cx={SIZES.circle / 2}
+              cy={SIZES.circle / 2}
+              r={SIZES.circle / 2 - SIZES.stroke / 2}
+              stroke={COLORS.progressTrack}
+              strokeWidth={SIZES.stroke}
+              fill="transparent"
+            />
+            {/* Progress Circle */}
+            <Circle
+              cx={SIZES.circle / 2}
+              cy={SIZES.circle / 2}
+              r={SIZES.circle / 2 - SIZES.stroke / 2}
+              stroke={COLORS.progressFill}
+              strokeWidth={SIZES.stroke}
+              fill="transparent"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - progress)}
+              strokeLinecap="round"
+              transform={`rotate(-90 ${SIZES.circle / 2} ${SIZES.circle / 2})`}
+            />
+          </Svg>
+
+          {/* Timer Text Inside Circle */}
+          <View style={styles.timerTextContainer}>
+            <Text style={styles.timerText}>{formatTime(timeRemaining)}</Text>
+            {plan && (
+              <Text style={styles.planText}>{plan.fastingHours} HR FAST</Text>
+            )}
+          </View>
         </View>
-      </View>
 
-      {/* Bottom Button */}
-      <TouchableOpacity 
-        style={styles.endButton}
-        onPress={endFast}
-      >
-        <Text style={styles.endButtonText}>END FAST</Text>
-      </TouchableOpacity>
+        {/* Button - 20px below circle */}
+        <TouchableOpacity style={styles.endButton} onPress={endFast}>
+          <Text style={styles.endButtonText}>END FAST</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -168,23 +187,27 @@ export default function TimerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0C0C',
+    backgroundColor: COLORS.background,
+    paddingHorizontal: SIZES.padding,
+  },
+  mainContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
   },
   topLabel: {
-    fontSize: 18,
+    fontSize: 26,
+    fontFamily: FONTS.oswaldBold,
+    color: COLORS.textSecondary,
     fontWeight: 'bold',
-    color: '#6B705C',
     letterSpacing: 2,
     textTransform: 'uppercase',
-    marginBottom: 60,
+    marginBottom: 100, 
   },
   circleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 60,
+    marginBottom: 100, // 20px below circle
   },
   circle: {
     position: 'absolute',
@@ -194,33 +217,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timerText: {
-    fontSize: 42,
+    fontSize: 48,
+    fontFamily: FONTS.monoBold,
+    lineHeight: 56,
+    color: COLORS.textPrimary,
+    letterSpacing: 1,
     fontWeight: 'bold',
-    color: '#D0C9B3',
-    fontFamily: 'monospace',
-    letterSpacing: 2,
   },
   planText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#6B705C',
+    fontSize: 16,
+    fontFamily: FONTS.oswaldMedium,
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 8,
+    letterSpacing: 1.5,
+    marginTop: 12,
   },
   endButton: {
-    backgroundColor: '#556B2F',
-    paddingHorizontal: 40,
-    paddingVertical: 16,
-    borderRadius: 8,
-    minWidth: 200,
+    backgroundColor: COLORS.buttonBg,
+    width: width * 0.8,
+    height: SIZES.buttonHeight,
+    borderRadius: SIZES.buttonRadius,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   endButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#D0C9B3',
+    fontSize: 18,
+    fontFamily: FONTS.oswaldSemiBold,
+    color: COLORS.buttonText,
     textTransform: 'uppercase',
     letterSpacing: 1,
+    fontWeight: 'bold',
   },
 });
