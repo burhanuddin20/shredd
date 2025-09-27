@@ -1,34 +1,51 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
-    ACHIEVEMENTS,
-    calculateLevel,
-    getRankName,
-    UserProfile
+  ACHIEVEMENTS,
+  calculateLevel,
+  getRankName,
+  UserProfile,
 } from '@/constants/game';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path, Polygon } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
-// Mock user data - in real app this would come from storage/API
+// 🎨 Theme constants (matching homepage/leaderboard)
+const COLORS = {
+  background: '#0B0C0C',
+  textPrimary: '#E6E2D3', // beige
+  textSecondary: '#6B705C', // muted military green
+  buttonBg: '#556B2F', // military olive green
+  surface: '#111111', // card backgrounds
+  border: '#2A2A2A',
+  accent: '#B22222', // military red accent
+  warning: '#DAA520', // military gold
+};
+
+const FONTS = {
+  heading: Platform.OS === 'ios' ? 'Anton-Regular' : 'Anton_400Regular',
+  monoBold: Platform.OS === 'ios' ? 'RobotoMono-Bold' : 'RobotoMono_Bold',
+};
+
+// Mock user data
 const mockUser: UserProfile = {
   id: '1',
-  username: 'Scout',
-  email: 'scout@surveycorps.com',
+  username: 'trilly',
+  email: 'trilly@surveycorps.com',
   profilePicture: 'https://i.pravatar.cc/100',
-  totalXP: 2200,
+  totalXP: 250,
   currentStreak: 5,
   longestStreak: 12,
   totalFasts: 15,
@@ -37,175 +54,209 @@ const mockUser: UserProfile = {
   createdAt: new Date('2024-01-01'),
 };
 
-export default function ProfileScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
-  const [user] = useState<UserProfile>(mockUser);
+// Mock fast history data
+const mockFastHistory = [
+  { id: 1, date: '2024-01-15', duration: '16:00', type: '16:8', status: 'Completed' },
+  { id: 2, date: '2024-01-14', duration: '14:30', type: '16:8', status: 'Completed' },
+  { id: 3, date: '2024-01-13', duration: '18:00', type: '18:6', status: 'Completed' },
+  { id: 4, date: '2024-01-12', duration: '8:00', type: '16:8', status: 'Cancelled' },
+  { id: 5, date: '2024-01-11', duration: '16:00', type: '16:8', status: 'Completed' },
+];
 
+// Rank Badge Components (reusing from leaderboard)
+const ScoutBadge = ({ size = 24 }: { size?: number }) => (
+  <Svg width={size} height={size} viewBox="0 0 128 128">
+    <Path
+      d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+      fill="none"
+      stroke={COLORS.textSecondary}
+      strokeWidth="8"
+    />
+    <Path
+      d="M38 58 L64 82 L90 58"
+      fill="none"
+      stroke={COLORS.textSecondary}
+      strokeWidth="8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const SoldierBadge = ({ size = 24 }: { size?: number }) => (
+  <Svg width={size} height={size} viewBox="0 0 128 128">
+    <Path
+      d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+      fill="none"
+      stroke={COLORS.textSecondary}
+      strokeWidth="8"
+    />
+    <Polygon
+      points="64,38 68,48 78,48 70,54 74,64 64,58 54,64 58,54 50,48 60,48"
+      fill={COLORS.textSecondary}
+    />
+  </Svg>
+);
+
+const getRankBadge = (rank: string, size = 24) => {
+  switch (rank.toLowerCase()) {
+    case 'scout':
+      return <ScoutBadge size={size} />;
+    case 'soldier':
+      return <SoldierBadge size={size} />;
+    default:
+      return <SoldierBadge size={size} />;
+  }
+};
+
+// Achievement Badge Component
+const AchievementBadge = ({
+  achievement,
+  isUnlocked
+}: {
+  achievement: any;
+  isUnlocked: boolean;
+}) => (
+  <View style={[styles.achievementBadge, !isUnlocked && styles.lockedBadge]}>
+    <Svg width={32} height={32} viewBox="0 0 128 128">
+      <Path
+        d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+        fill="none"
+        stroke={isUnlocked ? COLORS.warning : COLORS.border}
+        strokeWidth="8"
+      />
+      <Polygon
+        points="64,38 68,48 78,48 70,54 74,64 64,58 54,64 58,54 50,48 60,48"
+        fill={isUnlocked ? COLORS.warning : COLORS.border}
+      />
+    </Svg>
+    <Text style={[styles.achievementLabel, !isUnlocked && styles.lockedText]}>
+      {achievement.name}
+    </Text>
+  </View>
+);
+
+export default function ProfileScreen() {
+  const [fontsLoaded] = useFonts({
+    Anton_400Regular,
+  });
+
+  const [user] = useState<UserProfile>(mockUser);
+  const [showAllAchievements, setShowAllAchievements] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const userLevel = calculateLevel(user.totalXP);
   const rankName = getRankName(userLevel.level);
-  const userAchievements = ACHIEVEMENTS.filter(achievement => 
-    user.achievements.includes(achievement.id)
-  );
 
-  const getRankBadgeColor = (level: number): string => {
-    if (level >= 10) return colors.rankGold;
-    if (level >= 5) return colors.rankSilver;
-    return colors.rankBronze;
-  };
-
-  const getRankBadgeIcon = (level: number): string => {
-    if (level >= 15) return 'crown.fill';
-    if (level >= 10) return 'star.fill';
-    if (level >= 5) return 'medal.fill';
-    return 'shield.fill';
-  };
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.surface }]}>
-          <View style={styles.profileSection}>
-            <View style={styles.avatarContainer}>
-              <Image source={{ uri: user.profilePicture }} style={styles.avatar} />
-              <View style={[styles.rankBadge, { backgroundColor: getRankBadgeColor(userLevel.level) }]}>
-                <IconSymbol 
-                  name={getRankBadgeIcon(userLevel.level)} 
-                  size={16} 
-                  color={colors.primary} 
-                />
-              </View>
-            </View>
-            
-            <View style={styles.userInfo}>
-              <Text style={[styles.username, { color: colors.text }]}>{user.username}</Text>
-              <Text style={[styles.email, { color: colors.icon }]}>{user.email}</Text>
-              <Text style={[styles.rank, { color: colors.accent }]}>{rankName}</Text>
-            </View>
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>PROFILE</Text>
 
-          {/* Level Progress */}
-          <View style={styles.levelSection}>
-            <View style={styles.levelInfo}>
-              <Text style={[styles.levelText, { color: colors.text }]}>
-                Level {userLevel.level}
-              </Text>
-              <Text style={[styles.xpText, { color: colors.accent }]}>
-                {userLevel.currentLevelXP} / {userLevel.nextLevelXP} XP
-              </Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    backgroundColor: colors.accent,
-                    width: `${(userLevel.currentLevelXP / userLevel.nextLevelXP) * 100}%`
-                  }
-                ]} 
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Stats Grid */}
-        <View style={[styles.statsSection, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Mission Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
-              <IconSymbol name="trophy.fill" size={24} color={colors.accent} />
-              <Text style={styles.statValue}>{user.totalXP}</Text>
-              <Text style={styles.statLabel}>Total XP</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.secondary }]}>
-              <IconSymbol name="flame.fill" size={24} color={colors.accent} />
-              <Text style={styles.statValue}>{user.currentStreak}</Text>
-              <Text style={styles.statLabel}>Current Streak</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.warning }]}>
-              <IconSymbol name="clock.fill" size={24} color={colors.accent} />
-              <Text style={styles.statValue}>{user.longestStreak}</Text>
-              <Text style={styles.statLabel}>Longest Streak</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.success }]}>
-              <IconSymbol name="checkmark.circle.fill" size={24} color={colors.accent} />
-              <Text style={styles.statValue}>{user.totalFasts}</Text>
-              <Text style={styles.statLabel}>Total Fasts</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Achievements */}
-        <View style={[styles.achievementsSection, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Achievements</Text>
-            <Text style={[styles.achievementCount, { color: colors.accent }]}>
-              {userAchievements.length} / {ACHIEVEMENTS.length}
-            </Text>
-          </View>
-          
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.achievementsScroll}>
-            {userAchievements.map((achievement) => (
-              <View key={achievement.id} style={[styles.achievementCard, { backgroundColor: colors.primary }]}>
-                <IconSymbol name="medal.fill" size={32} color={colors.rankGold} />
-                <Text style={[styles.achievementName, { color: colors.text }]}>
-                  {achievement.name}
-                </Text>
-                <Text style={[styles.achievementXP, { color: colors.accent }]}>
-                  +{achievement.xpReward} XP
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={[styles.actionsSection, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
-          
-          <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-            onPress={() => router.push('/profile/history')}
-          >
-            <IconSymbol name="clock.fill" size={24} color={colors.accent} />
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionTitle, { color: colors.text }]}>Fast History</Text>
-              <Text style={[styles.actionSubtitle, { color: colors.icon }]}>
-                View all your fasting records
-              </Text>
-            </View>
-            <IconSymbol name="chevron.right" size={16} color={colors.icon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: colors.secondary }]}
-            onPress={() => router.push('/leaderboard')}
-          >
-            <IconSymbol name="trophy.fill" size={24} color={colors.accent} />
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionTitle, { color: colors.text }]}>Leaderboard</Text>
-              <Text style={[styles.actionSubtitle, { color: colors.icon }]}>
-                See your ranking among warriors
-              </Text>
-            </View>
-            <IconSymbol name="chevron.right" size={16} color={colors.icon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: colors.warning }]}
+          {/* Settings Icon */}
+          <TouchableOpacity
+            style={styles.settingsIcon}
             onPress={() => router.push('/profile/settings')}
           >
-            <IconSymbol name="gearshape.fill" size={24} color={colors.accent} />
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionTitle, { color: colors.text }]}>Settings</Text>
-              <Text style={[styles.actionSubtitle, { color: colors.icon }]}>
-                Customize your experience
-              </Text>
-            </View>
-            <IconSymbol name="chevron.right" size={16} color={colors.icon} />
+            <IconSymbol name="gearshape.fill" size={24} color={COLORS.textSecondary} />
           </TouchableOpacity>
+
+          {/* Profile Picture & Info */}
+          <View style={styles.profileSection}>
+            <View style={styles.avatarContainer}>
+              {getRankBadge(rankName, 80)}
+            </View>
+
+            <View style={styles.userInfo}>
+              <Text style={styles.username}>{user.username}</Text>
+              <Text style={styles.rank}>{rankName}</Text>
+            </View>
+          </View>
         </View>
+
+        {/* Records Section */}
+        <View style={styles.recordsSection}>
+          <Text style={styles.sectionTitle}>RECORDS</Text>
+          <View style={styles.recordsRow}>
+            <View style={styles.recordCard}>
+              <Text style={styles.recordValue}>{user.totalFasts}</Text>
+              <Text style={styles.recordLabel}>TOTAL FASTS</Text>
+            </View>
+            <View style={styles.recordCard}>
+              <Text style={styles.recordValue}>{user.longestStreak}</Text>
+              <Text style={styles.recordLabel}>LONGEST STREAK</Text>
+            </View>
+            <View style={styles.recordCard}>
+              <Text style={styles.recordValue}>{Math.floor(user.totalXP / 100)}</Text>
+              <Text style={styles.recordLabel}>DAYS FASTING</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Achievements Section */}
+        <View style={styles.achievementsSection}>
+          <Text style={styles.sectionTitle}>ACHIEVEMENTS</Text>
+          <View style={styles.achievementsGrid}>
+            {(showAllAchievements ? ACHIEVEMENTS : ACHIEVEMENTS.slice(0, 8)).map((achievement) => (
+              <AchievementBadge
+                key={achievement.id}
+                achievement={achievement}
+                isUnlocked={user.achievements.includes(achievement.id)}
+              />
+            ))}
+          </View>
+          {ACHIEVEMENTS.length > 8 && (
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setShowAllAchievements(!showAllAchievements)}
+            >
+              <Text style={styles.toggleButtonText}>
+                {showAllAchievements ? 'SHOW LESS' : `SHOW ALL (${ACHIEVEMENTS.length})`}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Fast History Section */}
+        <View style={styles.historySection}>
+          <Text style={styles.sectionTitle}>FAST HISTORY</Text>
+          <View style={styles.historyList}>
+            {(showAllHistory ? mockFastHistory : mockFastHistory.slice(0, 3)).map((fast, index, array) => (
+              <View key={fast.id} style={styles.historyRow}>
+                <View style={styles.historyInfo}>
+                  <Text style={styles.historyDate}>{fast.date}</Text>
+                  <Text style={styles.historyDuration}>{fast.duration}</Text>
+                </View>
+                <View style={styles.historyDetails}>
+                  <Text style={styles.historyType}>{fast.type}</Text>
+                  <Text style={[
+                    styles.historyStatus,
+                    fast.status === 'Completed' ? styles.completedStatus : styles.cancelledStatus
+                  ]}>
+                    {fast.status}
+                  </Text>
+                </View>
+                {index < array.length - 1 && <View style={styles.historyDivider} />}
+              </View>
+            ))}
+          </View>
+          {mockFastHistory.length > 3 && (
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setShowAllHistory(!showAllHistory)}
+            >
+              <Text style={styles.toggleButtonText}>
+                {showAllHistory ? 'SHOW LESS' : `SHOW ALL (${mockFastHistory.length})`}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -214,173 +265,240 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   scrollContent: {
     padding: 16,
-    gap: 16,
-  },
-  header: {
-    borderRadius: 16,
-    padding: 20,
     gap: 20,
   },
-  profileSection: {
-    flexDirection: 'row',
+  header: {
     alignItems: 'center',
-    gap: 16,
-  },
-  avatarContainer: {
+    paddingVertical: 20,
+    gap: 20,
     position: 'relative',
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  title: {
+    fontSize: 36,
+    fontFamily: FONTS.heading,
+    color: COLORS.textSecondary,
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    fontWeight: 'bold',
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-  rankBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  profileSection: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatarContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
+    width: 100,
+    height: 100,
   },
   userInfo: {
-    flex: 1,
+    alignItems: 'center',
     gap: 4,
   },
   username: {
     fontSize: 24,
+    fontFamily: FONTS.heading,
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
-  },
-  email: {
-    fontSize: 14,
-    opacity: 0.8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   rank: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: FONTS.heading,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  levelSection: {
-    gap: 8,
-  },
-  levelInfo: {
+  metricsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 12,
   },
-  levelText: {
-    fontSize: 18,
+  metricCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  metricValue: {
+    fontSize: 24,
+    fontFamily: FONTS.monoBold,
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
   },
-  xpText: {
-    fontSize: 14,
-    fontWeight: '600',
+  metricLabel: {
+    fontSize: 10,
+    fontFamily: FONTS.heading,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 4,
+    textAlign: 'center',
   },
-  progressBar: {
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  statsSection: {
-    borderRadius: 16,
-    padding: 20,
+  achievementsSection: {
+    gap: 16,
   },
   sectionTitle: {
     fontSize: 20,
+    fontFamily: FONTS.heading,
+    color: COLORS.textSecondary,
     fontWeight: 'bold',
-    marginBottom: 16,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
-  statsGrid: {
+  achievementsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
-  statCard: {
-    flex: 1,
-    minWidth: (width - 64) / 2,
-    padding: 16,
-    borderRadius: 12,
+  achievementBadge: {
+    width: (width - 64) / 3,
     alignItems: 'center',
     gap: 8,
+    padding: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+  lockedBadge: {
+    opacity: 0.4,
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#ccc',
-    fontWeight: '600',
+  achievementLabel: {
+    fontSize: 10,
+    fontFamily: FONTS.heading,
+    color: COLORS.textSecondary,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  achievementsSection: {
-    borderRadius: 16,
-    padding: 20,
+  lockedText: {
+    color: COLORS.border,
   },
-  sectionHeader: {
+  historySection: {
+    gap: 16,
+  },
+  historyList: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  historyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  achievementCount: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  achievementsScroll: {
-    flexDirection: 'row',
-  },
-  achievementCard: {
     padding: 16,
-    borderRadius: 12,
-    marginRight: 12,
-    minWidth: 120,
-    alignItems: 'center',
-    gap: 8,
   },
-  achievementName: {
-    fontSize: 12,
+  historyInfo: {
+    gap: 4,
+  },
+  historyDate: {
+    fontSize: 14,
+    fontFamily: FONTS.monoBold,
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
+  },
+  historyDuration: {
+    fontSize: 12,
+    fontFamily: FONTS.heading,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  historyDetails: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  historyType: {
+    fontSize: 12,
+    fontFamily: FONTS.heading,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  historyStatus: {
+    fontSize: 12,
+    fontFamily: FONTS.heading,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: 'bold',
+  },
+  completedStatus: {
+    color: COLORS.textSecondary,
+  },
+  cancelledStatus: {
+    color: COLORS.accent,
+  },
+  historyDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 16,
+  },
+  settingsIcon: {
+    position: 'absolute',
+    top: 20,
+    right: 16,
+    padding: 8,
+  },
+  recordsSection: {
+    gap: 16,
+  },
+  recordsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  recordCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  recordValue: {
+    fontSize: 24,
+    fontFamily: FONTS.monoBold,
+    color: COLORS.textPrimary,
+    fontWeight: 'bold',
+  },
+  recordLabel: {
+    fontSize: 10,
+    fontFamily: FONTS.heading,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 4,
     textAlign: 'center',
   },
-  achievementXP: {
-    fontSize: 10,
-    fontWeight: '600',
+  toggleButton: {
+    backgroundColor: COLORS.buttonBg,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignSelf: 'center',
+    marginTop: 12,
   },
-  actionsSection: {
-    borderRadius: 16,
-    padding: 20,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  actionTextContainer: {
-    flex: 1,
-    gap: 2,
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  actionSubtitle: {
+  toggleButtonText: {
     fontSize: 12,
-    opacity: 0.8,
+    fontFamily: FONTS.heading,
+    color: COLORS.textPrimary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: 'bold',
   },
 });
-
