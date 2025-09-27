@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="none"/>
+  <!-- Shield base -->
+  <path d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+        fill="none" stroke="#4B5320" stroke-width="8"/>
+  <!-- Inner badge -->
+  
+  <g fill="none" stroke="#4B5320" stroke-width="6">
+    <path d="M28 56 C44 40, 56 40, 64 48 C72 40, 84 40, 100 56"/>
+    <path d="M36 68 C48 56, 56 56, 64 62 C72 56, 80 56, 92 68"/>
+  </g>
+
+</svg>

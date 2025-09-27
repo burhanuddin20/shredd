@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="none"/>
+  <!-- Shield base -->
+  <path d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+        fill="none" stroke="#4B5320" stroke-width="8"/>
+  <!-- Inner badge -->
+  
+  <polygon points="64,34 70,52 89,52 73,63 79,82 64,71 49,82 55,63 39,52 58,52"
+           fill="none" stroke="#4B5320" stroke-width="6" />
+
+</svg>
