@@ -1,4 +1,5 @@
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { MilitaryButton } from '@/components/ui/military-button';
+import { MilitaryCard } from '@/components/ui/military-card';
 import {
   FASTING_PLANS,
   Fast,
@@ -44,16 +45,39 @@ export default function TimerScreen() {
   const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
   const circumference = 2 * Math.PI * (CIRCLE_SIZE / 2 - STROKE_WIDTH / 2);
 
+  const completeFast = useCallback(() => {
+    if (currentFast && plan) {
+      haptics.success();
+      const xpEarned = getXPReward(plan.fastingHours);
+      const completedFast: Fast = {
+        ...currentFast,
+        status: 'completed',
+        actualEndTime: new Date(),
+        xpEarned,
+      };
+      
+      setCurrentFast(completedFast);
+      setIsRunning(false);
+      setIsPaused(false);
+      
+      Alert.alert(
+        'Fast Complete!',
+        `Congratulations! You earned ${xpEarned} XP.`,
+        [{ text: 'OK', onPress: () => router.push('/(tabs)') }]
+      );
+    }
+  }, [currentFast, plan, haptics]);
+
   useEffect(() => {
     if (isRunning && !isPaused && timeRemaining > 0) {
-      intervalRef.current = setInterval(() => {
+    intervalRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
             completeFast();
           }
           return prev - 1;
         });
-      }, 1000);
+    }, 1000);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -128,29 +152,6 @@ export default function TimerScreen() {
     );
   };
 
-  const completeFast = useCallback(() => {
-    if (currentFast && plan) {
-      haptics.success();
-      const xpEarned = getXPReward(plan.fastingHours);
-      const completedFast: Fast = {
-        ...currentFast,
-        status: 'completed',
-        actualEndTime: new Date(),
-        xpEarned,
-      };
-      
-      setCurrentFast(completedFast);
-      setIsRunning(false);
-      setIsPaused(false);
-      
-      Alert.alert(
-        'Fast Complete!',
-        `Congratulations! You earned ${xpEarned} XP.`,
-        [{ text: 'OK', onPress: () => router.push('/(tabs)') }]
-      );
-    }
-  }, [currentFast, plan, haptics]);
-
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -193,16 +194,20 @@ export default function TimerScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Fasting Timer</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.icon }]}>
-            Mission Control Center
+          <Text style={[styles.headerTitle, { color: colors.beige, fontFamily: 'military' }]}>
+            FASTING TIMER
           </Text>
-        </View>
+          <Text style={[styles.headerSubtitle, { color: colors.accent, fontFamily: 'body' }]}>
+            MISSION CONTROL CENTER
+          </Text>
+      </View>
 
         {/* Plan Selection */}
         {!currentFast && (
-          <View style={[styles.section, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Choose Your Mission</Text>
+          <MilitaryCard style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.beige, fontFamily: 'military' }]}>
+              SELECT MISSION PROTOCOL
+            </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.plansScroll}>
               {FASTING_PLANS.map((planOption) => (
                 <TouchableOpacity
@@ -210,42 +215,51 @@ export default function TimerScreen() {
                   style={[
                     styles.planCard,
                     { 
-                      backgroundColor: selectedPlan === planOption.id ? colors.accent : colors.primary,
+                      backgroundColor: selectedPlan === planOption.id ? colors.accent : colors.secondary,
                       borderColor: selectedPlan === planOption.id ? colors.accent : colors.border,
                     }
                   ]}
-                  onPress={() => {
+          onPress={() => {
                     haptics.selection();
                     setSelectedPlan(planOption.id);
                   }}
                 >
                   <Text style={[
                     styles.planName,
-                    { color: selectedPlan === planOption.id ? colors.primary : colors.text }
+                    { 
+                      color: selectedPlan === planOption.id ? colors.beige : colors.beige,
+                      fontFamily: 'body'
+                    }
                   ]}>
                     {planOption.name}
                   </Text>
                   <Text style={[
                     styles.planDifficulty,
-                    { color: selectedPlan === planOption.id ? colors.primary : colors.accent }
+                    { 
+                      color: selectedPlan === planOption.id ? colors.beige : colors.accent,
+                      fontFamily: 'body'
+                    }
                   ]}>
                     {planOption.difficulty}
                   </Text>
                   <Text style={[
                     styles.planDuration,
-                    { color: selectedPlan === planOption.id ? colors.primary : colors.icon }
+                    { 
+                      color: selectedPlan === planOption.id ? colors.beige : colors.icon,
+                      fontFamily: 'body'
+                    }
                   ]}>
-                    {planOption.fastingHours}h fast
+                    {planOption.fastingHours}h FAST
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
+          </MilitaryCard>
         )}
 
         {/* Timer Display */}
-        <View style={[styles.timerSection, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.statusText, { color: getStatusColor() }]}>
+        <MilitaryCard style={styles.timerSection}>
+          <Text style={[styles.statusText, { color: getStatusColor(), fontFamily: 'military' }]}>
             {getStatusText()}
           </Text>
 
@@ -278,11 +292,11 @@ export default function TimerScreen() {
             
             {/* Timer Text */}
             <View style={styles.timerTextContainer}>
-              <Text style={[styles.timerText, { color: colors.text }]}>
+              <Text style={[styles.timerText, { color: colors.beige, fontFamily: 'mono' }]}>
                 {formatTime(timeRemaining)}
               </Text>
               {plan && (
-                <Text style={[styles.planText, { color: colors.icon }]}>
+                <Text style={[styles.planText, { color: colors.accent, fontFamily: 'body' }]}>
                   {plan.name}
                 </Text>
               )}
@@ -290,93 +304,90 @@ export default function TimerScreen() {
           </View>
 
           {/* Time Remaining */}
-          <Text style={[styles.timeRemainingText, { color: colors.text }]}>
-            {timeRemaining > 0 ? `${formatTimeShort(timeRemaining)} remaining` : 'Time\'s up!'}
+          <Text style={[styles.timeRemainingText, { color: colors.beige, fontFamily: 'body' }]}>
+            {timeRemaining > 0 ? `${formatTimeShort(timeRemaining)} REMAINING` : 'MISSION COMPLETE!'}
           </Text>
-        </View>
+        </MilitaryCard>
 
         {/* Control Buttons */}
-        <View style={[styles.controlsSection, { backgroundColor: colors.surface }]}>
+        <MilitaryCard style={styles.controlsSection}>
           {!currentFast ? (
-            <TouchableOpacity
-              style={[styles.startButton, { backgroundColor: colors.accent }]}
+            <MilitaryButton
+              title="Start Mission"
               onPress={startFast}
-            >
-              <IconSymbol name="play.fill" size={24} color={colors.primary} />
-              <Text style={[styles.buttonText, { color: colors.primary }]}>Start Fast</Text>
-            </TouchableOpacity>
+              variant="primary"
+              size="large"
+            />
           ) : (
             <View style={styles.controlsRow}>
               {currentFast.status === 'in-progress' && (
                 <>
-                  <TouchableOpacity
-                    style={[styles.controlButton, { backgroundColor: colors.warning }]}
+                  <MilitaryButton
+                    title="Pause"
                     onPress={pauseFast}
-                  >
-                    <IconSymbol name="pause.fill" size={20} color={colors.primary} />
-                    <Text style={[styles.controlButtonText, { color: colors.primary }]}>Pause</Text>
-                  </TouchableOpacity>
+                    variant="secondary"
+                    size="medium"
+                  />
                   
-                  <TouchableOpacity
-                    style={[styles.controlButton, { backgroundColor: colors.danger }]}
+                  <MilitaryButton
+                    title="Abort"
                     onPress={stopFast}
-                  >
-                    <IconSymbol name="stop.fill" size={20} color="#fff" />
-                    <Text style={[styles.controlButtonText, { color: '#fff' }]}>Stop</Text>
-                  </TouchableOpacity>
+                    variant="danger"
+                    size="medium"
+                  />
                 </>
               )}
               
               {isPaused && (
-                <TouchableOpacity
-                  style={[styles.controlButton, { backgroundColor: colors.success }]}
+                <MilitaryButton
+                  title="Resume"
                   onPress={resumeFast}
-                >
-                  <IconSymbol name="play.fill" size={20} color={colors.primary} />
-                  <Text style={[styles.controlButtonText, { color: colors.primary }]}>Resume</Text>
-                </TouchableOpacity>
+                  variant="success"
+                  size="medium"
+                />
               )}
               
               {(currentFast.status === 'completed' || currentFast.status === 'cancelled') && (
-                <TouchableOpacity
-                  style={[styles.controlButton, { backgroundColor: colors.accent }]}
+                <MilitaryButton
+                  title="New Mission"
                   onPress={resetTimer}
-                >
-                  <IconSymbol name="arrow.clockwise" size={20} color={colors.primary} />
-                  <Text style={[styles.controlButtonText, { color: colors.primary }]}>New Fast</Text>
-                </TouchableOpacity>
+                  variant="primary"
+                  size="medium"
+                />
               )}
             </View>
           )}
-        </View>
+        </MilitaryCard>
 
         {/* Fast Info */}
         {currentFast && (
-          <View style={[styles.infoSection, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Fast Details</Text>
+          <MilitaryCard style={styles.infoSection}>
+            <Text style={[styles.sectionTitle, { color: colors.beige, fontFamily: 'military' }]}>
+              MISSION DETAILS
+            </Text>
             <View style={styles.infoGrid}>
               <View style={styles.infoItem}>
-                <Text style={[styles.infoLabel, { color: colors.icon }]}>Started</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
+                <Text style={[styles.infoLabel, { color: colors.icon, fontFamily: 'body' }]}>STARTED</Text>
+                <Text style={[styles.infoValue, { color: colors.beige, fontFamily: 'mono' }]}>
                   {currentFast.startTime.toLocaleTimeString()}
                 </Text>
               </View>
               <View style={styles.infoItem}>
-                <Text style={[styles.infoLabel, { color: colors.icon }]}>Planned End</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
+                <Text style={[styles.infoLabel, { color: colors.icon, fontFamily: 'body' }]}>PLANNED END</Text>
+                <Text style={[styles.infoValue, { color: colors.beige, fontFamily: 'mono' }]}>
                   {currentFast.endTime?.toLocaleTimeString()}
                 </Text>
               </View>
               {currentFast.xpEarned && (
                 <View style={styles.infoItem}>
-                  <Text style={[styles.infoLabel, { color: colors.icon }]}>XP Earned</Text>
-                  <Text style={[styles.infoValue, { color: colors.accent }]}>
+                  <Text style={[styles.infoLabel, { color: colors.icon, fontFamily: 'body' }]}>XP EARNED</Text>
+                  <Text style={[styles.infoValue, { color: colors.accent, fontFamily: 'body' }]}>
                     +{currentFast.xpEarned} XP
                   </Text>
-                </View>
+      </View>
               )}
-            </View>
-          </View>
+      </View>
+          </MilitaryCard>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -392,62 +403,68 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   header: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 20,
     alignItems: 'center',
+    borderWidth: 1,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 4,
+    letterSpacing: 1,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
+    letterSpacing: 0.5,
   },
   section: {
-    borderRadius: 16,
-    padding: 20,
+    padding: 0,
+    margin: 0,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 16,
+    letterSpacing: 1,
   },
   plansScroll: {
     flexDirection: 'row',
   },
   planCard: {
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     marginRight: 12,
     minWidth: 120,
     alignItems: 'center',
     borderWidth: 2,
   },
   planName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 4,
+    letterSpacing: 0.5,
   },
   planDifficulty: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     marginBottom: 4,
   },
   planDuration: {
-    fontSize: 11,
+    fontSize: 9,
     opacity: 0.8,
   },
   timerSection: {
-    borderRadius: 16,
     padding: 20,
     alignItems: 'center',
+    margin: 0,
   },
   statusText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: 'bold',
     marginBottom: 20,
+    letterSpacing: 1,
   },
   circleContainer: {
     alignItems: 'center',
@@ -462,55 +479,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timerText: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
-    fontFamily: 'monospace',
+    letterSpacing: 2,
   },
   planText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     marginTop: 4,
+    letterSpacing: 0.5,
   },
   timeRemainingText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
+    letterSpacing: 0.5,
   },
   controlsSection: {
-    borderRadius: 16,
     padding: 20,
     alignItems: 'center',
-  },
-  startButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    margin: 0,
   },
   controlsRow: {
     flexDirection: 'row',
-    gap: 16,
-  },
-  controlButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  controlButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    gap: 12,
+    width: '100%',
   },
   infoSection: {
-    borderRadius: 16,
     padding: 20,
+    margin: 0,
   },
   infoGrid: {
     gap: 12,
@@ -521,11 +517,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   infoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

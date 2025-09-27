@@ -1,4 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { MilitaryButton } from '@/components/ui/military-button';
+import { MilitaryCard } from '@/components/ui/military-card';
 import { FASTING_PLANS } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,51 +21,51 @@ const { width } = Dimensions.get('window');
 const onboardingSteps = [
   {
     id: 1,
-    title: 'Welcome to Shredd',
-    subtitle: 'Your Military-Grade Fasting Companion',
+    title: 'WELCOME TO SHREDD',
+    subtitle: 'MILITARY-GRADE FASTING PROTOCOL',
     description: 'Transform your intermittent fasting journey with gamification inspired by Attack on Titan. Rise through the ranks and become a legendary warrior!',
     icon: 'shield.fill',
-    color: Colors.light.accent,
+    color: '#556B2F',
   },
   {
     id: 2,
-    title: 'The Rules of Fasting',
-    subtitle: 'Mission Parameters',
+    title: 'FASTING PROTOCOLS',
+    subtitle: 'MISSION PARAMETERS',
     description: '• Fast for the duration of your chosen plan\n• Stay hydrated with water, tea, or coffee\n• Avoid caloric intake during fasting\n• Track your progress and earn XP',
     icon: 'list.bullet.clipboard.fill',
-    color: Colors.light.warning,
+    color: '#DAA520',
   },
   {
     id: 3,
-    title: 'Benefits of Fasting',
-    subtitle: 'Your Mission Advantages',
+    title: 'MISSION ADVANTAGES',
+    subtitle: 'FASTING BENEFITS',
     description: '• Improved metabolic health\n• Enhanced mental clarity\n• Weight management\n• Cellular repair and longevity\n• Increased energy levels',
     icon: 'heart.fill',
-    color: Colors.light.success,
+    color: '#556B2F',
   },
   {
     id: 4,
-    title: 'Achievement System',
-    subtitle: 'Military Decorations',
+    title: 'MILITARY DECORATIONS',
+    subtitle: 'ACHIEVEMENT SYSTEM',
     description: 'Earn badges and XP for completing fasts, maintaining streaks, and reaching milestones. From your first fast to becoming a 365-day veteran!',
     icon: 'medal.fill',
-    color: Colors.light.rankGold,
+    color: '#DAA520',
   },
   {
     id: 5,
-    title: 'Attack on Titan Theme',
-    subtitle: 'Military Aesthetics',
+    title: 'SURVEY CORPS THEME',
+    subtitle: 'MILITARY AESTHETICS',
     description: 'Experience the app with military-grade styling, ranks inspired by the Survey Corps, and a dark theme that reflects the world beyond the walls.',
     icon: 'building.columns.fill',
-    color: Colors.light.secondary,
+    color: '#6B705C',
   },
   {
     id: 6,
-    title: 'Choose Your Plan',
-    subtitle: 'Select Your Mission',
+    title: 'SELECT MISSION PLAN',
+    subtitle: 'CHOOSE YOUR PROTOCOL',
     description: 'Start with the 7-day free trial, then continue your journey for just $2/month. Choose from multiple fasting plans to suit your warrior level.',
     icon: 'creditcard.fill',
-    color: Colors.light.primary,
+    color: '#556B2F',
   },
 ];
 
@@ -95,6 +97,19 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Hero Section for first step */}
+        {currentStep === 0 && (
+          <View style={styles.heroSection}>
+            <View style={styles.warriorSilhouette}>
+              <IconSymbol name="figure.walk" size={120} color={colors.accent} />
+              <View style={[styles.cloak, { backgroundColor: colors.accent + '40' }]} />
+            </View>
+            <Text style={[styles.heroText, { color: colors.beige }]}>
+              START YOUR TRAINING
+            </Text>
+          </View>
+        )}
+
         {/* Progress Indicator */}
         <View style={styles.progressContainer}>
           {onboardingSteps.map((_, index) => (
@@ -112,20 +127,22 @@ export default function OnboardingScreen() {
 
         {/* Skip Button */}
         <TouchableOpacity style={styles.skipButton} onPress={skipOnboarding}>
-          <Text style={[styles.skipText, { color: colors.icon }]}>Skip</Text>
+          <Text style={[styles.skipText, { color: colors.beige }]}>SKIP</Text>
         </TouchableOpacity>
 
         {/* Content */}
         <View style={styles.content}>
-          <View style={styles.iconContainer}>
-            <IconSymbol
-              name={currentStepData.icon}
-              size={80}
-              color={currentStepData.color}
-            />
-          </View>
+          {currentStep !== 0 && (
+            <View style={styles.iconContainer}>
+              <IconSymbol
+                name={currentStepData.icon}
+                size={80}
+                color={currentStepData.color}
+              />
+            </View>
+          )}
 
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[styles.title, { color: colors.beige }]}>
             {currentStepData.title}
           </Text>
 
@@ -133,23 +150,23 @@ export default function OnboardingScreen() {
             {currentStepData.subtitle}
           </Text>
 
-          <Text style={[styles.description, { color: colors.text }]}>
+          <Text style={[styles.description, { color: colors.beige }]}>
             {currentStepData.description}
           </Text>
 
           {/* Special content for plan selection */}
           {currentStep === 5 && (
             <View style={styles.plansContainer}>
-              <Text style={[styles.plansTitle, { color: colors.text }]}>
-                Available Plans:
+              <Text style={[styles.plansTitle, { color: colors.beige }]}>
+                AVAILABLE PROTOCOLS:
               </Text>
               {FASTING_PLANS.slice(0, 3).map((plan) => (
-                <View key={plan.id} style={[styles.planCard, { backgroundColor: colors.surface }]}>
-                  <Text style={[styles.planName, { color: colors.text }]}>{plan.name}</Text>
+                <MilitaryCard key={plan.id} style={styles.planCard}>
+                  <Text style={[styles.planName, { color: colors.beige }]}>{plan.name}</Text>
                   <Text style={[styles.planDifficulty, { color: colors.accent }]}>
                     {plan.difficulty}
                   </Text>
-                </View>
+                </MilitaryCard>
               ))}
             </View>
           )}
@@ -157,22 +174,21 @@ export default function OnboardingScreen() {
 
         {/* Navigation Buttons */}
         <View style={styles.navigation}>
-          <TouchableOpacity
-            style={[styles.navButton, { backgroundColor: colors.surface }]}
-            onPress={prevStep}
-            disabled={currentStep === 0}
-          >
-            <Text style={[styles.navButtonText, { color: colors.text }]}>Previous</Text>
-          </TouchableOpacity>
+          {currentStep > 0 && (
+            <MilitaryButton
+              title="Previous"
+              onPress={prevStep}
+              variant="secondary"
+              size="medium"
+            />
+          )}
 
-          <TouchableOpacity
-            style={[styles.navButton, { backgroundColor: colors.accent }]}
+          <MilitaryButton
+            title={currentStep === onboardingSteps.length - 1 ? 'Start Mission' : 'Next'}
             onPress={nextStep}
-          >
-            <Text style={[styles.navButtonText, { color: colors.primary }]}>
-              {currentStep === onboardingSteps.length - 1 ? 'Start Mission' : 'Next'}
-            </Text>
-          </TouchableOpacity>
+            variant="primary"
+            size="medium"
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -186,6 +202,32 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginTop: 40,
+    marginBottom: 40,
+  },
+  warriorSilhouette: {
+    position: 'relative',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  cloak: {
+    position: 'absolute',
+    top: 20,
+    left: -20,
+    right: -20,
+    height: 80,
+    borderRadius: 40,
+    opacity: 0.3,
+  },
+  heroText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    textAlign: 'center',
+    fontFamily: 'military',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -207,8 +249,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   skipText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    fontFamily: 'military',
   },
   content: {
     flex: 1,
@@ -220,22 +264,27 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
+    letterSpacing: 1,
+    fontFamily: 'military',
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 20,
+    letterSpacing: 0.5,
+    fontFamily: 'body',
   },
   description: {
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
-    opacity: 0.8,
+    opacity: 0.9,
+    fontFamily: 'body',
   },
   plansContainer: {
     marginTop: 30,
@@ -243,25 +292,26 @@ const styles = StyleSheet.create({
   },
   plansTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     marginBottom: 15,
     textAlign: 'center',
+    letterSpacing: 1,
+    fontFamily: 'military',
   },
   planCard: {
-    padding: 15,
-    borderRadius: 12,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(74, 222, 128, 0.2)',
   },
   planName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     marginBottom: 4,
+    letterSpacing: 0.5,
+    fontFamily: 'body',
   },
   planDifficulty: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontFamily: 'body',
   },
   navigation: {
     flexDirection: 'row',
@@ -269,16 +319,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 30,
     gap: 15,
-  },
-  navButton: {
-    flex: 1,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  navButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
