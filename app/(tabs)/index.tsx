@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   sectionLabel: {
-    fontSize: 16,
+    fontSize: 20,
     fontFamily: FONTS.oswaldBold,
     color: COLORS.textSecondary,
     fontWeight: 'bold',
