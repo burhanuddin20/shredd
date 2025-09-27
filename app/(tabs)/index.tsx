@@ -241,7 +241,7 @@ export default function HomeScreen() {
 
         {/* Leaderboard Section */}
         <View style={styles.leaderboardSection}>
-          <Text style={styles.sectionLabel}>LEADERBOARD</Text>
+          <Text style={styles.leaderboardLabel}>LEADERBOARD</Text>
           <Text style={styles.leaderboardPosition}>5th PLACE</Text>
         </View>
 
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   homeTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontFamily: FONTS.oswaldBold,
     color: COLORS.textSecondary,
     fontWeight: 'bold',
@@ -287,12 +287,13 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.oswaldMedium,
     color: COLORS.textPrimary,
     fontWeight: '600',
+    marginTop: 8,
   },
   currentFastSection: {
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 20,
+    gap: 14,
   },
   sectionLabel: {
     fontSize: 16,
@@ -345,7 +346,7 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    height: 40,
+    height: 48,
     backgroundColor: COLORS.border,
   },
   statLabel: {
@@ -367,6 +368,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
+  },
+  leaderboardLabel: {
+    fontSize: 16,
+    fontFamily: FONTS.oswaldBold,
+    color: COLORS.textSecondary,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    alignSelf: 'flex-start',
+    marginBottom: 6,
   },
   leaderboardPosition: {
     fontSize: 18,
