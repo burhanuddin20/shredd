@@ -1,31 +1,56 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { MilitaryCard } from '@/components/ui/military-card';
 import {
-    calculateLevel,
-    Fast,
-    FASTING_PLANS,
-    getRankName,
-    UserProfile
+  calculateLevel,
+  Fast,
+  FASTING_PLANS,
+  getRankName,
+  getXPReward,
+  UserProfile
 } from '@/constants/game';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
-const CIRCLE_SIZE = width * 0.4; // Smaller circle for home screen
-const STROKE_WIDTH = 6;
+
+// 🎨 Theme constants (matching the timer design)
+const COLORS = {
+  background: '#0B0C0C',
+  textPrimary: '#D0C9B3',
+  textSecondary: '#6B705C',
+  buttonBg: '#556B2F',
+  progressTrack: '#1A1A1A',
+  progressFill: '#6B705C',
+  buttonText: '#D0C9B3',
+  surface: '#111111',
+  border: '#2A2A2A',
+};
+
+const SIZES = {
+  circle: 240, // 240px diameter as per specs
+  stroke: 12,  // 12px stroke width as per specs
+  buttonHeight: 56,
+  buttonRadius: 8,
+};
+
+const FONTS = {
+  oswaldBold: Platform.OS === 'ios' ? 'Oswald-Bold' : 'Oswald_Bold',
+  oswaldMedium: Platform.OS === 'ios' ? 'Oswald-Medium' : 'Oswald_Medium',
+  oswaldSemiBold: Platform.OS === 'ios' ? 'Oswald-SemiBold' : 'Oswald_SemiBold',
+  monoBold: Platform.OS === 'ios' ? 'RobotoMono-Bold' : 'RobotoMono_Bold',
+};
 
 // Mock user data - in real app this would come from storage/API
 const mockUser: UserProfile = {
@@ -33,7 +58,7 @@ const mockUser: UserProfile = {
   username: 'Scout',
   email: 'scout@surveycorps.com',
   profilePicture: 'https://i.pravatar.cc/100',
-  totalXP: 2200,
+  totalXP: 250,
   currentStreak: 5,
   longestStreak: 12,
   totalFasts: 15,
@@ -42,50 +67,108 @@ const mockUser: UserProfile = {
   createdAt: new Date('2024-01-01'),
 };
 
-const mockCurrentFast: Fast | null = {
-  id: 'current',
-  planId: '16:8',
-  startTime: new Date(Date.now() - 10 * 60 * 60 * 1000), // Started 10 hours ago
-  status: 'in-progress',
-};
-
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
+  // Timer state
+  const [currentFast, setCurrentFast] = useState<Fast | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [selectedPlan] = useState('16:8');
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // User data
   const [user] = useState<UserProfile>(mockUser);
-  const [currentFast] = useState<Fast | null>(mockCurrentFast);
-  const [timeRemaining, setTimeRemaining] = useState('');
 
   const userLevel = calculateLevel(user.totalXP);
   const rankName = getRankName(userLevel.level);
-  const currentPlan = FASTING_PLANS.find(plan => plan.id === user.currentPlan);
+  const plan = FASTING_PLANS.find(p => p.id === (currentFast?.planId || selectedPlan));
+  const totalSeconds = (plan?.fastingHours || 16) * 60 * 60;
+  const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
+  const circumference = 2 * Math.PI * (SIZES.circle / 2 - SIZES.stroke / 2);
+
+  const completeFast = useCallback(() => {
+    if (currentFast && plan) {
+      const xpEarned = getXPReward(plan.fastingHours);
+
+      // Reset state to allow starting a new fast
+      setCurrentFast(null);
+      setIsRunning(false);
+      setTimeRemaining(0);
+
+      Alert.alert(
+        'Fast Complete!',
+        `Congratulations! You earned ${xpEarned} XP.`,
+        [{ text: 'OK' }]
+      );
+    }
+  }, [currentFast, plan]);
 
   useEffect(() => {
-    if (currentFast) {
-      const interval = setInterval(() => {
-        const now = new Date();
-        const endTime = new Date(currentFast.startTime.getTime() + (currentPlan?.fastingHours || 16) * 60 * 60 * 1000);
-        const remaining = endTime.getTime() - now.getTime();
-        
-        if (remaining > 0) {
-          const hours = Math.floor(remaining / (1000 * 60 * 60));
-          const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-          setTimeRemaining(`${hours}h ${minutes}m`);
-        } else {
-          setTimeRemaining('Fast Complete!');
-        }
+    if (isRunning && timeRemaining > 0) {
+      intervalRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            completeFast();
+          }
+          return prev - 1;
+        });
       }, 1000);
-
-      return () => clearInterval(interval);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     }
-  }, [currentFast, currentPlan]);
 
-  const startNewFast = () => {
-    router.push('/timer');
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isRunning, timeRemaining, completeFast]);
+
+  const startFast = () => {
+    if (!plan) return;
+
+    const now = new Date();
+    const endTime = new Date(now.getTime() + plan.fastingHours * 60 * 60 * 1000);
+
+    const newFast: Fast = {
+      id: Date.now().toString(),
+      planId: selectedPlan,
+      startTime: now,
+      endTime: endTime,
+      status: 'in-progress',
+    };
+
+    setCurrentFast(newFast);
+    setTimeRemaining(plan.fastingHours * 60 * 60);
+    setIsRunning(true);
   };
 
-  const viewLeaderboard = () => {
-    router.push('/leaderboard');
+  const endFast = () => {
+    Alert.alert(
+      'End Fast',
+      'Are you sure you want to end this fast?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'End Fast',
+          style: 'destructive',
+          onPress: () => {
+            // Reset all state to allow starting a new fast
+            setCurrentFast(null);
+            setIsRunning(false);
+            setTimeRemaining(0);
+          }
+        },
+      ]
+    );
+  };
+
+  const formatTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const viewProfile = () => {
@@ -93,172 +176,100 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.surface }]}>
-          <View style={styles.headerTop}>
+        <View style={styles.header}>
+          <Text style={styles.homeTitle}>HOME</Text>
+
+          <View style={styles.userSection}>
             <View style={styles.userInfo}>
-              <Image source={{ uri: user.profilePicture }} style={styles.avatar} />
-              <View>
-                <Text style={[styles.username, { color: colors.text }]}>{user.username}</Text>
-                <Text style={[styles.rank, { color: colors.accent }]}>{rankName}</Text>
-              </View>
+              <Text style={styles.username}>{user.username}</Text>
+              <Text style={styles.rank}>{rankName}</Text>
             </View>
             <TouchableOpacity onPress={viewProfile} style={styles.profileButton}>
-              <IconSymbol name="person.circle" size={24} color={colors.icon} />
+              <IconSymbol name="person.circle" size={24} color={COLORS.textSecondary} />
             </TouchableOpacity>
-          </View>
-
-          {/* Stats */}
-          <View style={styles.statsContainer}>
-            <View style={[styles.statCard, { backgroundColor: colors.primary }]}>
-              <Text style={styles.statValue}>{user.totalXP}</Text>
-              <Text style={styles.statLabel}>Total XP</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.secondary }]}>
-              <Text style={styles.statValue}>Level {userLevel.level}</Text>
-              <Text style={styles.statLabel}>Current Level</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.warning }]}>
-              <Text style={styles.statValue}>{user.currentStreak}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
-            </View>
           </View>
         </View>
 
-        {/* Current Fast */}
-        <MilitaryCard style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.beige, fontFamily: 'military' }]}>
-            CURRENT MISSION
-          </Text>
-          
-          {currentFast ? (
-            <View style={styles.currentFastCard}>
-              <View style={styles.fastHeader}>
-                <Text style={[styles.fastPlan, { color: colors.accent, fontFamily: 'body' }]}>
-                  {currentPlan?.name}
-                </Text>
-                <Text style={[styles.fastStatus, { color: colors.success, fontFamily: 'body' }]}>
-                  IN PROGRESS
-                </Text>
-              </View>
-              
-              {/* Progress Ring */}
-              <View style={styles.progressRingContainer}>
-                <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={styles.progressRing}>
-                  {/* Background Circle */}
-                  <Circle
-                    cx={CIRCLE_SIZE / 2}
-                    cy={CIRCLE_SIZE / 2}
-                    r={CIRCLE_SIZE / 2 - STROKE_WIDTH / 2}
-                    stroke={colors.border}
-                    strokeWidth={STROKE_WIDTH}
-                    fill="transparent"
-                  />
-                  {/* Progress Circle */}
-                  <Circle
-                    cx={CIRCLE_SIZE / 2}
-                    cy={CIRCLE_SIZE / 2}
-                    r={CIRCLE_SIZE / 2 - STROKE_WIDTH / 2}
-                    stroke={colors.accent}
-                    strokeWidth={STROKE_WIDTH}
-                    fill="transparent"
-                    strokeDasharray={2 * Math.PI * (CIRCLE_SIZE / 2 - STROKE_WIDTH / 2)}
-                    strokeDashoffset={2 * Math.PI * (CIRCLE_SIZE / 2 - STROKE_WIDTH / 2) * (1 - (10 / (currentPlan?.fastingHours || 16)))}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
-                  />
-                </Svg>
-                
-                {/* Timer Text in Center */}
-                <View style={styles.timerTextContainer}>
-                  <Text style={[styles.timeRemaining, { color: colors.beige, fontFamily: 'mono' }]}>
-                    {timeRemaining}
-                  </Text>
-                  <Text style={[styles.timeLabel, { color: colors.icon, fontFamily: 'body' }]}>
-                    REMAINING
-                  </Text>
-                </View>
-              </View>
-              
-              <TouchableOpacity 
-                style={[styles.actionButton, { backgroundColor: colors.accent }]}
-                onPress={() => router.push('/timer')}
-              >
-                <Text style={[styles.actionButtonText, { color: colors.beige, fontFamily: 'military' }]}>
-                  VIEW TIMER
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.noFastCard}>
-              <IconSymbol name="timer" size={48} color={colors.icon} />
-              <Text style={[styles.noFastText, { color: colors.beige, fontFamily: 'body' }]}>
-                NO ACTIVE MISSION
+        {/* Current Fast Section */}
+        <MilitaryCard style={styles.currentFastSection}>
+          <Text style={styles.sectionLabel}>CURRENT FAST</Text>
+
+          {/* Progress Ring */}
+          <View style={styles.progressRingContainer}>
+            <Svg width={SIZES.circle} height={SIZES.circle} style={styles.progressRing}>
+              {/* Background Circle */}
+              <Circle
+                cx={SIZES.circle / 2}
+                cy={SIZES.circle / 2}
+                r={SIZES.circle / 2 - SIZES.stroke / 2}
+                stroke={COLORS.progressTrack}
+                strokeWidth={SIZES.stroke}
+                fill="transparent"
+              />
+              {/* Progress Circle */}
+              <Circle
+                cx={SIZES.circle / 2}
+                cy={SIZES.circle / 2}
+                r={SIZES.circle / 2 - SIZES.stroke / 2}
+                stroke={COLORS.progressFill}
+                strokeWidth={SIZES.stroke}
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * (1 - progress)}
+                strokeLinecap="round"
+                transform={`rotate(-90 ${SIZES.circle / 2} ${SIZES.circle / 2})`}
+              />
+            </Svg>
+
+            {/* Timer Text Inside Circle */}
+            <View style={styles.timerTextContainer}>
+              <Text style={styles.timerText}>
+                {currentFast ? formatTime(timeRemaining) : '00:00:00'}
               </Text>
-              <TouchableOpacity 
-                style={[styles.actionButton, { backgroundColor: colors.accent }]}
-                onPress={startNewFast}
-              >
-                <Text style={[styles.actionButtonText, { color: colors.beige, fontFamily: 'military' }]}>
-                  START NEW MISSION
+              {plan && (
+                <Text style={styles.planText}>
+                  {plan.fastingHours} HR FAST
                 </Text>
-              </TouchableOpacity>
+              )}
             </View>
-          )}
+          </View>
+
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{plan?.id || '16:8'}</Text>
+              <Text style={styles.statLabel}>Plan</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{user.totalXP}</Text>
+              <Text style={styles.statLabel}>XP</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{userLevel.level}</Text>
+              <Text style={styles.statLabel}>Level</Text>
+            </View>
+          </View>
         </MilitaryCard>
 
-        {/* Current Plan */}
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Current Plan</Text>
-          <View style={styles.planCard}>
-            <Text style={[styles.planName, { color: colors.text }]}>
-              {currentPlan?.name}
-            </Text>
-            <Text style={[styles.planDescription, { color: colors.icon }]}>
-              {currentPlan?.fastingHours}h fasting, {currentPlan?.eatingHours}h eating
-            </Text>
-            <TouchableOpacity 
-              style={[styles.changePlanButton, { borderColor: colors.accent }]}
-              onPress={() => router.push('/timer')}
-            >
-              <Text style={[styles.changePlanText, { color: colors.accent }]}>
-                Change Plan
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Leaderboard Section */}
+        <MilitaryCard style={styles.leaderboardSection}>
+          <Text style={styles.sectionLabel}>LEADERBOARD</Text>
+          <Text style={styles.leaderboardPosition}>5th PLACE</Text>
+        </MilitaryCard>
 
-        {/* Quick Actions */}
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
-          <View style={styles.quickActions}>
-            <TouchableOpacity 
-              style={[styles.quickActionCard, { backgroundColor: colors.primary }]}
-              onPress={() => router.push('/leaderboard')}
-            >
-              <IconSymbol name="trophy.fill" size={24} color={colors.accent} />
-              <Text style={[styles.quickActionText, { color: colors.text }]}>Leaderboard</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.quickActionCard, { backgroundColor: colors.secondary }]}
-              onPress={() => router.push('/profile/history')}
-            >
-              <IconSymbol name="clock.fill" size={24} color={colors.accent} />
-              <Text style={[styles.quickActionText, { color: colors.text }]}>History</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.quickActionCard, { backgroundColor: colors.warning }]}
-              onPress={() => router.push('/profile/settings')}
-            >
-              <IconSymbol name="gearshape.fill" size={24} color={colors.accent} />
-              <Text style={[styles.quickActionText, { color: colors.text }]}>Settings</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Action Button */}
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={currentFast ? endFast : startFast}
+        >
+          <Text style={styles.actionButtonText}>
+            {currentFast ? 'END FAST' : 'START FAST'}
+          </Text>
+        </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -267,91 +278,61 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   scrollContent: {
     padding: 16,
     gap: 16,
   },
   header: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 8,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  username: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  rank: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  profileButton: {
-    padding: 8,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#ccc',
-    fontWeight: '600',
-  },
-  section: {
-    borderRadius: 16,
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  currentFastCard: {
+    paddingVertical: 20,
     alignItems: 'center',
     gap: 16,
   },
-  fastHeader: {
+  homeTitle: {
+    fontSize: 24,
+    fontFamily: FONTS.oswaldBold,
+    color: COLORS.textSecondary,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  userSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
   },
-  fastPlan: {
-    fontSize: 16,
+  userInfo: {
+    alignItems: 'flex-start',
+  },
+  username: {
+    fontSize: 18,
+    fontFamily: FONTS.oswaldBold,
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
   },
-  fastStatus: {
-    fontSize: 12,
+  rank: {
+    fontSize: 14,
+    fontFamily: FONTS.oswaldMedium,
+    color: COLORS.textSecondary,
     fontWeight: '600',
-    letterSpacing: 0.5,
+  },
+  profileButton: {
+    padding: 8,
+  },
+  currentFastSection: {
+    alignItems: 'center',
+    padding: 24,
+    gap: 24,
+  },
+  sectionLabel: {
+    fontSize: 16,
+    fontFamily: FONTS.oswaldBold,
+    color: COLORS.textSecondary,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   progressRingContainer: {
     alignItems: 'center',
@@ -365,83 +346,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timeRemaining: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  timerText: {
+    fontSize: 48,
+    fontFamily: FONTS.monoBold,
+    lineHeight: 56,
+    color: COLORS.textPrimary,
     letterSpacing: 1,
+    fontWeight: 'bold',
   },
-  timeLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    marginTop: 2,
-  },
-  noFastCard: {
-    alignItems: 'center',
-    gap: 16,
-    padding: 20,
-  },
-  noFastText: {
+  planText: {
     fontSize: 16,
+    fontFamily: FONTS.oswaldMedium,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginTop: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 20,
+    fontFamily: FONTS.oswaldBold,
+    color: COLORS.textPrimary,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 12,
+    fontFamily: FONTS.oswaldMedium,
+    color: COLORS.textSecondary,
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  leaderboardSection: {
+    alignItems: 'center',
+    padding: 20,
+    gap: 8,
+  },
+  leaderboardPosition: {
+    fontSize: 18,
+    fontFamily: FONTS.oswaldBold,
+    color: COLORS.textPrimary,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   actionButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: COLORS.buttonBg,
+    width: width * 0.8,
+    height: SIZES.buttonHeight,
+    borderRadius: SIZES.buttonRadius,
     alignItems: 'center',
-    minWidth: 120,
-    // Subtle shadow for depth
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   actionButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  planCard: {
-    gap: 8,
-  },
-  planName: {
     fontSize: 18,
+    fontFamily: FONTS.oswaldSemiBold,
+    color: COLORS.buttonText,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
     fontWeight: 'bold',
-  },
-  planDescription: {
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  changePlanButton: {
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  changePlanText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickActionCard: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    gap: 8,
-  },
-  quickActionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
   },
 });
