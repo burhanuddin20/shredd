@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontSize: 48,
-    fontFamily: FONTS.monoBold,
+    fontFamily: FONTS.oswaldBold,
     lineHeight: 56,
     color: COLORS.textPrimary,
     letterSpacing: 1,
