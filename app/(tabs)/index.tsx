@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { MilitaryCard } from '@/components/ui/military-card';
 import {
     calculateLevel,
     Fast,
@@ -20,8 +21,11 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
+const CIRCLE_SIZE = width * 0.4; // Smaller circle for home screen
+const STROKE_WIDTH = 6;
 
 // Mock user data - in real app this would come from storage/API
 const mockUser: UserProfile = {
@@ -124,60 +128,86 @@ export default function HomeScreen() {
         </View>
 
         {/* Current Fast */}
-        <View style={[styles.section, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Current Mission</Text>
+        <MilitaryCard style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.beige, fontFamily: 'military' }]}>
+            CURRENT MISSION
+          </Text>
           
           {currentFast ? (
             <View style={styles.currentFastCard}>
               <View style={styles.fastHeader}>
-                <Text style={[styles.fastPlan, { color: colors.accent }]}>
+                <Text style={[styles.fastPlan, { color: colors.accent, fontFamily: 'body' }]}>
                   {currentPlan?.name}
                 </Text>
-                <Text style={[styles.fastStatus, { color: colors.success }]}>
-                  In Progress
+                <Text style={[styles.fastStatus, { color: colors.success, fontFamily: 'body' }]}>
+                  IN PROGRESS
                 </Text>
               </View>
               
-              <Text style={[styles.timeRemaining, { color: colors.text }]}>
-                {timeRemaining}
-              </Text>
-              
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { 
-                      backgroundColor: colors.accent,
-                      width: `${(10 / (currentPlan?.fastingHours || 16)) * 100}%`
-                    }
-                  ]} 
-                />
+              {/* Progress Ring */}
+              <View style={styles.progressRingContainer}>
+                <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={styles.progressRing}>
+                  {/* Background Circle */}
+                  <Circle
+                    cx={CIRCLE_SIZE / 2}
+                    cy={CIRCLE_SIZE / 2}
+                    r={CIRCLE_SIZE / 2 - STROKE_WIDTH / 2}
+                    stroke={colors.border}
+                    strokeWidth={STROKE_WIDTH}
+                    fill="transparent"
+                  />
+                  {/* Progress Circle */}
+                  <Circle
+                    cx={CIRCLE_SIZE / 2}
+                    cy={CIRCLE_SIZE / 2}
+                    r={CIRCLE_SIZE / 2 - STROKE_WIDTH / 2}
+                    stroke={colors.accent}
+                    strokeWidth={STROKE_WIDTH}
+                    fill="transparent"
+                    strokeDasharray={2 * Math.PI * (CIRCLE_SIZE / 2 - STROKE_WIDTH / 2)}
+                    strokeDashoffset={2 * Math.PI * (CIRCLE_SIZE / 2 - STROKE_WIDTH / 2) * (1 - (10 / (currentPlan?.fastingHours || 16)))}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
+                  />
+                </Svg>
+                
+                {/* Timer Text in Center */}
+                <View style={styles.timerTextContainer}>
+                  <Text style={[styles.timeRemaining, { color: colors.beige, fontFamily: 'mono' }]}>
+                    {timeRemaining}
+                  </Text>
+                  <Text style={[styles.timeLabel, { color: colors.icon, fontFamily: 'body' }]}>
+                    REMAINING
+                  </Text>
+                </View>
               </View>
               
               <TouchableOpacity 
-                style={[styles.actionButton, { backgroundColor: colors.danger }]}
+                style={[styles.actionButton, { backgroundColor: colors.accent }]}
                 onPress={() => router.push('/timer')}
               >
-                <Text style={styles.actionButtonText}>View Timer</Text>
+                <Text style={[styles.actionButtonText, { color: colors.beige, fontFamily: 'military' }]}>
+                  VIEW TIMER
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.noFastCard}>
               <IconSymbol name="timer" size={48} color={colors.icon} />
-              <Text style={[styles.noFastText, { color: colors.text }]}>
-                No active fast
+              <Text style={[styles.noFastText, { color: colors.beige, fontFamily: 'body' }]}>
+                NO ACTIVE MISSION
               </Text>
               <TouchableOpacity 
                 style={[styles.actionButton, { backgroundColor: colors.accent }]}
                 onPress={startNewFast}
               >
-                <Text style={[styles.actionButtonText, { color: colors.primary }]}>
-                  Start New Fast
+                <Text style={[styles.actionButtonText, { color: colors.beige, fontFamily: 'military' }]}>
+                  START NEW MISSION
                 </Text>
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </MilitaryCard>
 
         {/* Current Plan */}
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
@@ -315,27 +345,36 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   fastPlan: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   fastStatus: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  progressRingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  progressRing: {
+    position: 'absolute',
+  },
+  timerTextContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timeRemaining: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
+    letterSpacing: 1,
   },
-  progressBar: {
-    width: '100%',
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
+  timeLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
   noFastCard: {
     alignItems: 'center',
@@ -352,11 +391,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     minWidth: 120,
+    // Subtle shadow for depth
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   actionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
   planCard: {
     gap: 8,
