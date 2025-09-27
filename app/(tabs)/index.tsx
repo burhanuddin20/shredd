@@ -2,6 +2,7 @@ import {
   calculateLevel,
   Fast,
   FASTING_PLANS,
+  getRankName,
   getXPReward,
   UserProfile
 } from '@/constants/game';
@@ -24,19 +25,19 @@ const { width } = Dimensions.get('window');
 // 🎨 Theme constants (matching the timer design)
 const COLORS = {
   background: '#0B0C0C',
-  textPrimary: '#D0C9B3',
-  textSecondary: '#6B705C',
+  textPrimary: '#E6E2D3', // brighter beige
+  textSecondary: '#4B5320', // deep olive
   buttonBg: '#556B2F',
   progressTrack: '#1A1A1A',
-  progressFill: '#6B705C',
-  buttonText: '#D0C9B3',
-  surface: '#111111',
+  progressFill: '#4B5320', // olive accent
+  buttonText: '#E6E2D3',
   border: '#2A2A2A',
 };
 
+
 const SIZES = {
-  circle: 240, // 240px diameter as per specs
-  stroke: 12,  // 12px stroke width as per specs
+  circle: 280, // bigger ring
+  stroke: 14,  // thicker stroke
   buttonHeight: 56,
   buttonRadius: 8,
 };
@@ -75,6 +76,7 @@ export default function HomeScreen() {
   const [user] = useState<UserProfile>(mockUser);
 
   const userLevel = calculateLevel(user.totalXP);
+  const rankName = getRankName(userLevel.level);
   const plan = FASTING_PLANS.find(p => p.id === (currentFast?.planId || selectedPlan));
   const totalSeconds = (plan?.fastingHours || 16) * 60 * 60;
   const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
@@ -173,7 +175,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.homeTitle}>HOME</Text>
-          <Text style={styles.username}>{user.username}</Text>
+          <Text style={styles.username}>USER: {user.username}</Text>
         </View>
 
         {/* Current Fast Section */}
@@ -233,8 +235,8 @@ export default function HomeScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Level</Text>
-              <Text style={styles.statValue}>{userLevel.level}</Text>
+              <Text style={styles.statLabel}>RANK</Text>
+              <Text style={styles.statValue}>{rankName}</Text>
             </View>
           </View>
         </View>
@@ -303,12 +305,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     alignSelf: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 20,
   },
   progressRingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    marginBottom: 24,
   },
   progressRing: {
     position: 'absolute',
