@@ -1,14 +1,10 @@
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { MilitaryCard } from '@/components/ui/military-card';
 import {
   calculateLevel,
   Fast,
   FASTING_PLANS,
-  getRankName,
   getXPReward,
   UserProfile
 } from '@/constants/game';
-import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -79,7 +75,6 @@ export default function HomeScreen() {
   const [user] = useState<UserProfile>(mockUser);
 
   const userLevel = calculateLevel(user.totalXP);
-  const rankName = getRankName(userLevel.level);
   const plan = FASTING_PLANS.find(p => p.id === (currentFast?.planId || selectedPlan));
   const totalSeconds = (plan?.fastingHours || 16) * 60 * 60;
   const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
@@ -171,9 +166,6 @@ export default function HomeScreen() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const viewProfile = () => {
-    router.push('/profile');
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -181,20 +173,11 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.homeTitle}>HOME</Text>
-
-          <View style={styles.userSection}>
-            <View style={styles.userInfo}>
-              <Text style={styles.username}>{user.username}</Text>
-              <Text style={styles.rank}>{rankName}</Text>
-            </View>
-            <TouchableOpacity onPress={viewProfile} style={styles.profileButton}>
-              <IconSymbol name="person.circle" size={24} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.username}>{user.username}</Text>
         </View>
 
         {/* Current Fast Section */}
-        <MilitaryCard style={styles.currentFastSection}>
+        <View style={styles.currentFastSection}>
           <Text style={styles.sectionLabel}>CURRENT FAST</Text>
 
           {/* Progress Ring */}
@@ -240,25 +223,27 @@ export default function HomeScreen() {
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{plan?.id || '16:8'}</Text>
               <Text style={styles.statLabel}>Plan</Text>
+              <Text style={styles.statValue}>{plan?.id || '16:8'}</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user.totalXP}</Text>
               <Text style={styles.statLabel}>XP</Text>
+              <Text style={styles.statValue}>{user.totalXP}</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userLevel.level}</Text>
               <Text style={styles.statLabel}>Level</Text>
+              <Text style={styles.statValue}>{userLevel.level}</Text>
             </View>
           </View>
-        </MilitaryCard>
+        </View>
 
         {/* Leaderboard Section */}
-        <MilitaryCard style={styles.leaderboardSection}>
+        <View style={styles.leaderboardSection}>
           <Text style={styles.sectionLabel}>LEADERBOARD</Text>
           <Text style={styles.leaderboardPosition}>5th PLACE</Text>
-        </MilitaryCard>
+        </View>
 
         {/* Action Button */}
         <TouchableOpacity
@@ -287,44 +272,27 @@ const styles = StyleSheet.create({
   header: {
     paddingVertical: 20,
     alignItems: 'center',
-    gap: 16,
+    gap: 8,
   },
   homeTitle: {
-    fontSize: 24,
+    fontSize: 32,
     fontFamily: FONTS.oswaldBold,
     color: COLORS.textSecondary,
     fontWeight: 'bold',
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  userSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-  },
-  userInfo: {
-    alignItems: 'flex-start',
-  },
   username: {
     fontSize: 18,
-    fontFamily: FONTS.oswaldBold,
-    color: COLORS.textPrimary,
-    fontWeight: 'bold',
-  },
-  rank: {
-    fontSize: 14,
     fontFamily: FONTS.oswaldMedium,
-    color: COLORS.textSecondary,
+    color: COLORS.textPrimary,
     fontWeight: '600',
-  },
-  profileButton: {
-    padding: 8,
   },
   currentFastSection: {
     alignItems: 'center',
-    padding: 24,
-    gap: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 20,
   },
   sectionLabel: {
     fontSize: 16,
@@ -333,6 +301,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
     textTransform: 'uppercase',
+    alignSelf: 'flex-start',
+    marginBottom: 12,
   },
   progressRingContainer: {
     alignItems: 'center',
@@ -365,17 +335,18 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    alignItems: 'center',
     width: '100%',
   },
   statItem: {
     alignItems: 'center',
     gap: 4,
+    flex: 1,
   },
-  statValue: {
-    fontSize: 20,
-    fontFamily: FONTS.oswaldBold,
-    color: COLORS.textPrimary,
-    fontWeight: 'bold',
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: COLORS.border,
   },
   statLabel: {
     fontSize: 12,
@@ -385,9 +356,16 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  statValue: {
+    fontSize: 20,
+    fontFamily: FONTS.oswaldBold,
+    color: COLORS.textPrimary,
+    fontWeight: 'bold',
+  },
   leaderboardSection: {
-    alignItems: 'center',
-    padding: 20,
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 8,
   },
   leaderboardPosition: {
@@ -400,7 +378,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     backgroundColor: COLORS.buttonBg,
-    width: width * 0.8,
+    width: width - 32,
     height: SIZES.buttonHeight,
     borderRadius: SIZES.buttonRadius,
     alignItems: 'center',
