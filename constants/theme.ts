@@ -1,50 +1,76 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Attack on Titan inspired military theme colors
+ * Military green and black with accent colors
  */
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = '#2d5a27'; // Military green
+const tintColorDark = '#4ade80'; // Bright military green
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: '#1a1a1a',
+    background: '#f8fafc',
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: '#64748b',
+    tabIconDefault: '#64748b',
     tabIconSelected: tintColorLight,
+    // Attack on Titan theme colors
+    primary: '#1e293b', // Dark slate
+    secondary: '#2d5a27', // Military green
+    accent: '#4ade80', // Bright green
+    surface: '#ffffff',
+    surfaceDark: '#f1f5f9',
+    border: '#e2e8f0',
+    danger: '#dc2626',
+    warning: '#f59e0b',
+    success: '#10b981',
+    rankGold: '#fbbf24',
+    rankSilver: '#94a3b8',
+    rankBronze: '#cd7c2f',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: '#f8fafc',
+    background: '#0f172a',
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: '#94a3b8',
+    tabIconDefault: '#94a3b8',
     tabIconSelected: tintColorDark,
+    // Attack on Titan theme colors
+    primary: '#020617', // Very dark blue
+    secondary: '#1e293b', // Dark slate
+    accent: '#4ade80', // Bright green
+    surface: '#1e293b',
+    surfaceDark: '#0f172a',
+    border: '#334155',
+    danger: '#ef4444',
+    warning: '#fbbf24',
+    success: '#22c55e',
+    rankGold: '#fbbf24',
+    rankSilver: '#94a3b8',
+    rankBronze: '#cd7c2f',
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
+    /** Military/Military-style fonts */
+    military: 'Arial-BoldMT',
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
+    military: 'Arial',
     sans: 'normal',
     serif: 'serif',
     rounded: 'normal',
     mono: 'monospace',
   },
   web: {
+    military: "'Arial Black', 'Helvetica Neue', Arial, sans-serif",
     sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
     rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
