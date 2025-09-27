@@ -41,23 +41,15 @@ const FONTS = {
   monoBold: Platform.OS === 'ios' ? 'RobotoMono-Bold' : 'RobotoMono_Bold',
 };
 
-// Mock current fast - in real app this would come from storage/state
-const mockCurrentFast: Fast | null = {
-  id: '1',
-  planId: '16:8',
-  startTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // Started 2 hours ago
-  endTime: new Date(Date.now() + 14 * 60 * 60 * 1000), // 14 hours remaining
-  status: 'in-progress',
-};
-
 export default function TimerScreen() {
-  const [currentFast, setCurrentFast] = useState<Fast | null>(mockCurrentFast);
-  const [timeRemaining, setTimeRemaining] = useState(14 * 60 * 60); // 14 hours in seconds
-  const [isRunning, setIsRunning] = useState(true);
+  const [currentFast, setCurrentFast] = useState<Fast | null>(null); // Start with no active fast
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('16:8');
   
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const plan = FASTING_PLANS.find(p => p.id === currentFast?.planId || '16:8');
+  const plan = FASTING_PLANS.find(p => p.id === (currentFast?.planId || selectedPlan));
   const totalSeconds = (plan?.fastingHours || 16) * 60 * 60;
   const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
   const circumference = 2 * Math.PI * (SIZES.circle / 2 - SIZES.stroke / 2);
@@ -65,15 +57,11 @@ export default function TimerScreen() {
   const completeFast = useCallback(() => {
     if (currentFast && plan) {
       const xpEarned = getXPReward(plan.fastingHours);
-      const completedFast: Fast = {
-        ...currentFast,
-        status: 'completed',
-        actualEndTime: new Date(),
-        xpEarned,
-      };
       
-      setCurrentFast(completedFast);
+      // Reset state to allow starting a new fast
+      setCurrentFast(null);
       setIsRunning(false);
+      setTimeRemaining(0);
       
       Alert.alert(
         'Fast Complete!',
@@ -106,6 +94,25 @@ export default function TimerScreen() {
     };
   }, [isRunning, timeRemaining, completeFast]);
 
+  const startFast = () => {
+    if (!plan) return;
+    
+    const now = new Date();
+    const endTime = new Date(now.getTime() + plan.fastingHours * 60 * 60 * 1000);
+    
+    const newFast: Fast = {
+      id: Date.now().toString(),
+      planId: selectedPlan,
+      startTime: now,
+      endTime: endTime,
+      status: 'in-progress',
+    };
+
+    setCurrentFast(newFast);
+    setTimeRemaining(plan.fastingHours * 60 * 60);
+    setIsRunning(true);
+  };
+
   const endFast = () => {
     Alert.alert(
       'End Fast',
@@ -116,9 +123,8 @@ export default function TimerScreen() {
           text: 'End Fast', 
           style: 'destructive',
           onPress: () => {
-            if (currentFast) {
-              setCurrentFast({ ...currentFast, status: 'cancelled', actualEndTime: new Date() });
-            }
+            // Reset all state to allow starting a new fast
+            setCurrentFast(null);
             setIsRunning(false);
             setTimeRemaining(0);
           }
@@ -176,8 +182,13 @@ export default function TimerScreen() {
         </View>
 
         {/* Button - 20px below circle */}
-        <TouchableOpacity style={styles.endButton} onPress={endFast}>
-          <Text style={styles.endButtonText}>END FAST</Text>
+        <TouchableOpacity 
+          style={styles.actionButton} 
+          onPress={currentFast ? endFast : startFast}
+        >
+          <Text style={styles.actionButtonText}>
+            {currentFast ? 'END FAST' : 'START FAST'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -232,7 +243,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginTop: 12,
   },
-  endButton: {
+  actionButton: {
     backgroundColor: COLORS.buttonBg,
     width: width * 0.8,
     height: SIZES.buttonHeight,
@@ -240,7 +251,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  endButtonText: {
+  actionButtonText: {
     fontSize: 18,
     fontFamily: FONTS.oswaldSemiBold,
     color: COLORS.buttonText,
