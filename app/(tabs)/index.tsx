@@ -4,7 +4,7 @@ import {
   FASTING_PLANS,
   getRankName,
   getXPReward,
-  UserProfile
+  UserProfile,
 } from '@/constants/game';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -22,22 +22,21 @@ import Svg, { Circle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
-// 🎨 Theme constants (matching the timer design)
+// 🎨 Theme constants (refined to match mockup)
 const COLORS = {
   background: '#0B0C0C',
-  textPrimary: '#E6E2D3', // brighter beige
-  textSecondary: '#4B5320', // deep olive
-  buttonBg: '#556B2F',
+  textPrimary: '#C9C5B5', // muted beige
+  textSecondary: '#5A5F36', // softer olive for section labels
+  buttonBg: '#6B705C', // flat olive
   progressTrack: '#1A1A1A',
-  progressFill: '#4B5320', // olive accent
-  buttonText: '#E6E2D3',
+  progressFill: '#5A5F36', // olive progress ring
+  buttonText: '#0B0C0C', // dark button text
   border: '#2A2A2A',
 };
 
-
 const SIZES = {
-  circle: 280, // bigger ring
-  stroke: 14,  // thicker stroke
+  circle: 280, // larger ring
+  stroke: 14, // thicker stroke
   buttonHeight: 56,
   buttonRadius: 8,
 };
@@ -49,10 +48,10 @@ const FONTS = {
   monoBold: Platform.OS === 'ios' ? 'RobotoMono-Bold' : 'RobotoMono_Bold',
 };
 
-// Mock user data - in real app this would come from storage/API
+// Mock user data
 const mockUser: UserProfile = {
   id: '1',
-  username: 'Scout',
+  username: 'trilly',
   email: 'scout@surveycorps.com',
   profilePicture: 'https://i.pravatar.cc/100',
   totalXP: 250,
@@ -77,62 +76,58 @@ export default function HomeScreen() {
 
   const userLevel = calculateLevel(user.totalXP);
   const rankName = getRankName(userLevel.level);
-  const plan = FASTING_PLANS.find(p => p.id === (currentFast?.planId || selectedPlan));
+  const plan = FASTING_PLANS.find(
+    (p) => p.id === (currentFast?.planId || selectedPlan)
+  );
   const totalSeconds = (plan?.fastingHours || 16) * 60 * 60;
-  const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
+  const progress =
+    totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
   const circumference = 2 * Math.PI * (SIZES.circle / 2 - SIZES.stroke / 2);
 
   const completeFast = useCallback(() => {
     if (currentFast && plan) {
       const xpEarned = getXPReward(plan.fastingHours);
-
-      // Reset state to allow starting a new fast
       setCurrentFast(null);
       setIsRunning(false);
       setTimeRemaining(0);
 
-      Alert.alert(
-        'Fast Complete!',
-        `Congratulations! You earned ${xpEarned} XP.`,
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Fast Complete!', `You earned ${xpEarned} XP.`, [
+        { text: 'OK' },
+      ]);
     }
   }, [currentFast, plan]);
 
   useEffect(() => {
     if (isRunning && timeRemaining > 0) {
       intervalRef.current = setInterval(() => {
-        setTimeRemaining(prev => {
+        setTimeRemaining((prev) => {
           if (prev <= 1) {
             completeFast();
           }
           return prev - 1;
         });
       }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isRunning, timeRemaining, completeFast]);
 
   const startFast = () => {
     if (!plan) return;
-
     const now = new Date();
-    const endTime = new Date(now.getTime() + plan.fastingHours * 60 * 60 * 1000);
+    const endTime = new Date(
+      now.getTime() + plan.fastingHours * 60 * 60 * 1000
+    );
 
     const newFast: Fast = {
       id: Date.now().toString(),
       planId: selectedPlan,
       startTime: now,
-      endTime: endTime,
+      endTime,
       status: 'in-progress',
     };
 
@@ -142,32 +137,28 @@ export default function HomeScreen() {
   };
 
   const endFast = () => {
-    Alert.alert(
-      'End Fast',
-      'Are you sure you want to end this fast?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'End Fast',
-          style: 'destructive',
-          onPress: () => {
-            // Reset all state to allow starting a new fast
-            setCurrentFast(null);
-            setIsRunning(false);
-            setTimeRemaining(0);
-          }
+    Alert.alert('End Fast', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'End Fast',
+        style: 'destructive',
+        onPress: () => {
+          setCurrentFast(null);
+          setIsRunning(false);
+          setTimeRemaining(0);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -175,7 +166,6 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.homeTitle}>HOME</Text>
-          <Text style={styles.username}>USER: {user.username}</Text>
         </View>
 
         {/* Current Fast Section */}
@@ -184,8 +174,7 @@ export default function HomeScreen() {
 
           {/* Progress Ring */}
           <View style={styles.progressRingContainer}>
-            <Svg width={SIZES.circle} height={SIZES.circle} style={styles.progressRing}>
-              {/* Background Circle */}
+            <Svg width={SIZES.circle} height={SIZES.circle}>
               <Circle
                 cx={SIZES.circle / 2}
                 cy={SIZES.circle / 2}
@@ -194,7 +183,6 @@ export default function HomeScreen() {
                 strokeWidth={SIZES.stroke}
                 fill="transparent"
               />
-              {/* Progress Circle */}
               <Circle
                 cx={SIZES.circle / 2}
                 cy={SIZES.circle / 2}
@@ -205,19 +193,18 @@ export default function HomeScreen() {
                 strokeDasharray={circumference}
                 strokeDashoffset={circumference * (1 - progress)}
                 strokeLinecap="round"
-                transform={`rotate(-90 ${SIZES.circle / 2} ${SIZES.circle / 2})`}
+                transform={`rotate(-90 ${SIZES.circle / 2} ${SIZES.circle / 2
+                  })`}
               />
             </Svg>
 
-            {/* Timer Text Inside Circle */}
+            {/* Timer Text */}
             <View style={styles.timerTextContainer}>
               <Text style={styles.timerText}>
                 {currentFast ? formatTime(timeRemaining) : '00:00:00'}
               </Text>
               {plan && (
-                <Text style={styles.planText}>
-                  {plan.fastingHours} HR FAST
-                </Text>
+                <Text style={styles.planText}>{plan.fastingHours} HR FAST</Text>
               )}
             </View>
           </View>
@@ -225,7 +212,7 @@ export default function HomeScreen() {
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Plan</Text>
+              <Text style={styles.statLabel}>PLAN</Text>
               <Text style={styles.statValue}>{plan?.id || '16:8'}</Text>
             </View>
             <View style={styles.statDivider} />
@@ -237,6 +224,7 @@ export default function HomeScreen() {
             <View style={styles.statItem}>
               <Text style={styles.statLabel}>RANK</Text>
               <Text style={styles.statValue}>{rankName}</Text>
+              <Text style={styles.usernameSmall}>{user.username}</Text>
             </View>
           </View>
         </View>
@@ -256,7 +244,6 @@ export default function HomeScreen() {
             {currentFast ? 'END FAST' : 'START FAST'}
           </Text>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -274,7 +261,6 @@ const styles = StyleSheet.create({
   header: {
     paddingVertical: 20,
     alignItems: 'center',
-    gap: 8,
   },
   homeTitle: {
     fontSize: 28,
@@ -284,15 +270,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  username: {
-    fontSize: 18,
-    fontFamily: FONTS.oswaldMedium,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
-    marginTop: 8,
-  },
   currentFastSection: {
-    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 14,
@@ -304,21 +282,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
     textTransform: 'uppercase',
-    alignSelf: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   progressRingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
     marginBottom: 24,
-  },
-  progressRing: {
-    position: 'absolute',
   },
   timerTextContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'absolute',
   },
   timerText: {
     fontSize: 48,
@@ -366,6 +340,12 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontWeight: 'bold',
   },
+  usernameSmall: {
+    fontSize: 12,
+    fontFamily: FONTS.oswaldMedium,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
   leaderboardSection: {
     alignItems: 'flex-start',
     paddingHorizontal: 16,
@@ -379,7 +359,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
     textTransform: 'uppercase',
-    alignSelf: 'flex-start',
     marginBottom: 6,
   },
   leaderboardPosition: {
