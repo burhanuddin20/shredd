@@ -28,7 +28,7 @@ const { width } = Dimensions.get('window');
 // 🎨 Theme constants (refined to match mockup)
 const COLORS = {
   background: '#0B0C0C',
-  textPrimary: '#C9C5B5', // muted beige
+  textPrimary: '#948e77', // muted beige
   textSecondary: '#5A5F36', // softer olive for section labels
   buttonBg: '#6B705C', // flat olive
   progressTrack: '#1A1A1A',
