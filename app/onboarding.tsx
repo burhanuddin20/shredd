@@ -20,6 +20,7 @@ import {
   PanGestureHandler,
   PanGestureHandlerGestureEvent
 } from 'react-native-gesture-handler';
+import Purchases from 'react-native-purchases';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -96,8 +97,30 @@ export default function OnboardingScreen() {
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
+
+  // Initialize RevenueCat
+  useEffect(() => {
+    const initializeRevenueCat = async () => {
+      try {
+        // TODO: Replace with your actual RevenueCat API key
+        await Purchases.configure({
+          apiKey: 'your_revenue_cat_api_key_here', // iOS/Android
+        });
+
+        // Set user ID if needed
+        if (userName.trim()) {
+          await Purchases.logIn(userName.trim());
+        }
+      } catch (error) {
+        console.error('RevenueCat initialization failed:', error);
+      }
+    };
+
+    initializeRevenueCat();
+  }, [userName]);
 
   const nextStep = () => {
     // Haptic feedback for navigation
@@ -135,11 +158,67 @@ export default function OnboardingScreen() {
     }, 3000); // 3 seconds of loading animation
   };
 
-  const handleSubscriptionComplete = () => {
-    setShowSubscription(false);
-    // TODO: Save selected plan to user preferences
-    router.replace('/(tabs)');
+  // Handle subscription purchase
+  const handleStartFreeTrial = async () => {
+    setIsSubscribing(true);
+
+    try {
+      // Haptic feedback for subscription start
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      // TODO: Replace with your actual product ID in RevenueCat dashboard
+
+      // Check if user is eligible for free trial
+      const offerings = await Purchases.getOfferings();
+      const monthlyOffering = offerings.current?.monthly;
+
+      if (monthlyOffering) {
+        // Start the subscription with free trial
+        const purchaseResult = await Purchases.purchasePackage(monthlyOffering);
+
+        if (purchaseResult.customerInfo.entitlements.active['premium']) {
+          // Subscription successful
+          console.log('Subscription successful:', purchaseResult);
+
+          // Success haptic
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+          // Save user data
+          console.log('User:', userName, 'Plan:', selectedPlan);
+
+          // Navigate to main app
+          router.replace('/(tabs)');
+        } else {
+          throw new Error('Subscription not active');
+        }
+      } else {
+        throw new Error('Monthly offering not available');
+      }
+    } catch (error: any) {
+      console.error('Subscription failed:', error);
+
+      // Error haptic
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      // Handle different error types
+      if (error.code === 'PURCHASES_ERROR_PRODUCT_NOT_AVAILABLE_FOR_PURCHASE') {
+        console.log('Product not available for purchase');
+      } else if (error.code === 'PURCHASES_ERROR_PAYMENT_PENDING') {
+        console.log('Payment pending');
+      } else {
+        console.log('Subscription error:', error.message);
+      }
+    } finally {
+      setIsSubscribing(false);
+    }
   };
+
+  // Legacy function - keeping for potential future use
+  // const handleSubscriptionComplete = () => {
+  //   setShowSubscription(false);
+  //   // TODO: Save selected plan to user preferences
+  //   router.replace('/(tabs)');
+  // };
 
   // Loading Screen Component
   const LoadingScreen = () => {
@@ -261,11 +340,18 @@ export default function OnboardingScreen() {
 
           <View style={styles.subscriptionButtons}>
             <TouchableOpacity
-              style={[styles.startTrialButton, { backgroundColor: colors.accent }]}
-              onPress={handleSubscriptionComplete}
+              style={[
+                styles.startTrialButton,
+                {
+                  backgroundColor: isSubscribing ? colors.secondary : colors.accent,
+                  opacity: isSubscribing ? 0.7 : 1
+                }
+              ]}
+              onPress={handleStartFreeTrial}
+              disabled={isSubscribing}
             >
               <Text style={[styles.startTrialText, { color: colors.background }]}>
-                START FREE TRIAL
+                {isSubscribing ? 'PROCESSING...' : 'START FREE TRIAL'}
               </Text>
             </TouchableOpacity>
           </View>
