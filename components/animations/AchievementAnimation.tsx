@@ -43,13 +43,14 @@ export const AchievementAnimation: React.FC<AchievementAnimationProps> = ({
         if (visible) {
             // Haptic feedback
             light(); // Initial light haptic
-            
-            // Badge animations
+
+            // Badge animations - MUCH BIGGER
             badgeOpacity.value = withTiming(1, { duration: 300 });
             badgeScale.value = withSequence(
-                withTiming(0.8, { duration: 200 }),
-                withTiming(1.1, { duration: 200 }),
-                withTiming(1, { duration: 200 })
+                withTiming(0.5, { duration: 200 }),
+                withTiming(1.8, { duration: 300 }),
+                withTiming(1.5, { duration: 200 }),
+                withTiming(1.6, { duration: 100 })
             );
 
             // Ring animations
@@ -115,14 +116,14 @@ export const AchievementAnimation: React.FC<AchievementAnimationProps> = ({
                     <View style={[styles.glowRing, styles.glowRing2]} />
                 </Animated.View>
 
-                {/* Achievement Badge */}
+                {/* Achievement Badge - MUCH BIGGER */}
                 <Animated.View style={[styles.badgeContainer, animatedBadgeStyle]}>
                     <AchievementBadge achievement={achievement} isUnlocked={isUnlocked} />
                 </Animated.View>
 
                 {/* Text */}
                 <Animated.View style={[styles.textContainer, animatedTextStyle]}>
-                    <Text style={styles.unlockedText}>ACHIEVEMENT UNLOCKED</Text>
+                    <Text style={styles.unlockedText}>🎉 CONGRATULATIONS! 🎉</Text>
                     <Text style={styles.achievementName}>{achievement.name}</Text>
                     <Text style={styles.achievementDescription}>{achievement.description}</Text>
                 </Animated.View>
@@ -145,53 +146,60 @@ const styles = StyleSheet.create({
     },
     glowRing: {
         position: 'absolute',
-        width: 150,
-        height: 150,
-        borderRadius: 75,
-        borderWidth: 3,
+        width: 250,
+        height: 250,
+        borderRadius: 125,
+        borderWidth: 4,
         borderColor: COLORS.gold,
         opacity: 0.8,
     },
     glowRing2: {
-        width: 200,
-        height: 200,
-        borderRadius: 100,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
         opacity: 0.4,
     },
     badgeContainer: {
-        marginBottom: 40,
+        marginBottom: 50,
+        transform: [{ scale: 2.0 }], // Make badge 2x bigger by default
     },
     textContainer: {
         alignItems: 'center',
         paddingHorizontal: 40,
     },
     unlockedText: {
-        fontSize: 20,
+        fontSize: 28,
         fontFamily: FONTS.heading,
         color: COLORS.gold,
         fontWeight: 'bold',
         textTransform: 'uppercase',
-        letterSpacing: 2,
-        textShadowColor: '#000000',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
-        marginBottom: 12,
+        letterSpacing: 3,
+        textShadowColor: COLORS.accent,
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
+        marginBottom: 16,
     },
     achievementName: {
-        fontSize: 24,
+        fontSize: 32,
         fontFamily: FONTS.heading,
         color: COLORS.textPrimary,
         fontWeight: 'bold',
         textTransform: 'uppercase',
-        letterSpacing: 1,
-        marginBottom: 8,
+        letterSpacing: 2,
+        marginBottom: 12,
         textAlign: 'center',
+        textShadowColor: COLORS.warning,
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 3,
     },
     achievementDescription: {
-        fontSize: 16,
+        fontSize: 18,
         fontFamily: FONTS.heading,
         color: COLORS.textSecondary,
         textAlign: 'center',
-        lineHeight: 22,
+        lineHeight: 24,
+        textShadowColor: COLORS.gold,
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
 });
