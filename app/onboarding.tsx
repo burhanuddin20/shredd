@@ -4,8 +4,9 @@ import { MilitaryButton } from '@/components/ui/military-button';
 import { FASTING_PLANS } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -13,6 +14,13 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // const { width } = Dimensions.get('window');
@@ -66,14 +74,6 @@ const onboardingSteps = [
     icon: 'list.bullet',
     color: '#556B2F',
   },
-  {
-    id: 7,
-    title: 'SUBSCRIPTION',
-    subtitle: 'JOIN THE ARMY',
-    description: 'Start with the 7-day free trial, then continue your journey for just $2/month.',
-    icon: 'creditcard.fill',
-    color: '#556B2F',
-  },
 ];
 
 export default function OnboardingScreen() {
@@ -89,14 +89,159 @@ export default function OnboardingScreen() {
       setCurrentStep(currentStep + 1);
     } else {
       // On final step, require plan selection
+      console.log('On final step - Selected plan:', selectedPlan);
       if (selectedPlan) {
-        // TODO: Save selected plan to user preferences
-        console.log('Selected plan:', selectedPlan);
-        router.replace('/(tabs)');
+        startLoadingSequence();
       } else {
         // Could show an alert here asking user to select a plan
+        console.log('No plan selected');
       }
     }
+  };
+
+  const startLoadingSequence = () => {
+    setIsLoading(true);
+
+    // Simulate building personalized plan
+    setTimeout(() => {
+      setShowSubscription(true);
+      setIsLoading(false);
+    }, 3000); // 3 seconds of loading animation
+  };
+
+  const handleSubscriptionComplete = () => {
+    setShowSubscription(false);
+    // TODO: Save selected plan to user preferences
+    console.log('Selected plan:', selectedPlan);
+    router.replace('/(tabs)');
+  };
+
+  // Loading Screen Component
+  const LoadingScreen = () => {
+    const pulseScale = useSharedValue(1);
+    const rotationValue = useSharedValue(0);
+    const textOpacity = useSharedValue(0);
+
+    useEffect(() => {
+      if (isLoading) {
+        // Haptic feedback on start
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+        // Pulse animation
+        pulseScale.value = withRepeat(
+          withSequence(
+            withTiming(1.2, { duration: 800 }),
+            withTiming(1, { duration: 800 })
+          ),
+          -1,
+          false
+        );
+
+        // Rotation animation
+        rotationValue.value = withRepeat(
+          withTiming(360, { duration: 2000 }),
+          -1,
+          false
+        );
+
+        // Text fade in
+        textOpacity.value = withTiming(1, { duration: 500 });
+      }
+    }, [pulseScale, rotationValue, textOpacity]);
+
+    const animatedPulseStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: pulseScale.value }],
+    }));
+
+    const animatedRotationStyle = useAnimatedStyle(() => ({
+      transform: [{ rotate: `${rotationValue.value}deg` }],
+    }));
+
+    const animatedTextStyle = useAnimatedStyle(() => ({
+      opacity: textOpacity.value,
+    }));
+
+    if (!isLoading) return null;
+
+    return (
+      <View style={styles.loadingOverlay}>
+        <View style={styles.loadingContent}>
+          <Animated.View style={[styles.loadingIconContainer, animatedPulseStyle]}>
+            <Animated.View style={animatedRotationStyle}>
+              <IconSymbol name="gearshape" size={60} color={colors.accent} />
+            </Animated.View>
+          </Animated.View>
+
+          <Animated.View style={animatedTextStyle}>
+            <Text style={[styles.loadingTitle, { color: colors.beige }]}>
+              BUILDING PERSONALISED PLAN
+            </Text>
+            <Text style={[styles.loadingSubtitle, { color: colors.accent }]}>
+              Starting Mission...
+            </Text>
+          </Animated.View>
+        </View>
+      </View>
+    );
+  };
+
+  // Subscription Overlay Component
+  const SubscriptionOverlay = () => {
+    const scaleValue = useSharedValue(0);
+    const opacityValue = useSharedValue(0);
+
+    useEffect(() => {
+      if (showSubscription) {
+        // Haptic feedback for gift
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        scaleValue.value = withSequence(
+          withTiming(1.1, { duration: 300 }),
+          withTiming(1, { duration: 200 })
+        );
+        opacityValue.value = withTiming(1, { duration: 400 });
+      }
+    }, [scaleValue, opacityValue]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scaleValue.value }],
+      opacity: opacityValue.value,
+    }));
+
+    if (!showSubscription) return null;
+
+    return (
+      <View style={styles.subscriptionOverlay}>
+        <Animated.View style={[styles.subscriptionContent, animatedStyle]}>
+          <View style={styles.giftContainer}>
+            <IconSymbol name="gift" size={80} color={colors.warning} />
+          </View>
+
+          <Text style={[styles.subscriptionTitle, { color: colors.beige }]}>
+            FREE GIFT!
+          </Text>
+
+          <Text style={[styles.subscriptionSubtitle, { color: colors.accent }]}>
+            7-Day Free Trial
+          </Text>
+
+          <Text style={[styles.subscriptionPrice, { color: colors.accent }]}>
+            then just $2/month
+          </Text>
+
+          <View style={styles.subscriptionButtons}>
+            <TouchableOpacity
+              style={[styles.startTrialButton, { backgroundColor: colors.accent }]}
+              onPress={handleSubscriptionComplete}
+            >
+              <Text style={[styles.startTrialText, { color: colors.background }]}>
+                START FREE TRIAL
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
+    );
   };
 
   const prevStep = () => {
@@ -180,6 +325,8 @@ export default function OnboardingScreen() {
           {/* Special content for plan selection */}
           {currentStep === 5 && (
             <View style={styles.plansContainer}>
+              <Text style={{ color: 'white', fontSize: 16, marginBottom: 10 }}>
+              </Text>
               {FASTING_PLANS.map((plan) => (
                 <TouchableOpacity
                   key={plan.id}
@@ -224,7 +371,7 @@ export default function OnboardingScreen() {
           <MilitaryButton
             title={
               currentStep === onboardingSteps.length - 1
-                ? (selectedPlan ? 'Start Mission' : 'Select Plan to Continue')
+                ? 'Start Mission'
                 : 'Next'
             }
             onPress={nextStep}
@@ -233,6 +380,12 @@ export default function OnboardingScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Loading Overlay */}
+      <LoadingScreen />
+
+      {/* Subscription Overlay */}
+      <SubscriptionOverlay />
     </SafeAreaView>
   );
 }
@@ -328,8 +481,9 @@ const styles = StyleSheet.create({
     fontFamily: 'body',
   },
   plansContainer: {
-    marginTop: 15,
+    marginTop: 5,
     width: '100%',
+    padding: 5,
   },
   plansTitle: {
     fontSize: 20,
@@ -353,11 +507,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 8,
     padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    minHeight: 70,
   },
   selectedPlanCard: {
     borderWidth: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   planCardContent: {
     flexDirection: 'row',
@@ -408,5 +563,105 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 30,
     gap: 15,
+  },
+  // Loading Overlay Styles
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(11, 12, 12, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingIconContainer: {
+    marginBottom: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    letterSpacing: 2,
+    fontFamily: 'military',
+    marginBottom: 8,
+  },
+  loadingSubtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 1,
+    fontFamily: 'body',
+  },
+  // Subscription Overlay Styles
+  subscriptionOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(11, 12, 12, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1001,
+  },
+  subscriptionContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  giftContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subscriptionTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    letterSpacing: 3,
+    fontFamily: 'military',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  subscriptionSubtitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    letterSpacing: 1,
+    fontFamily: 'military',
+    marginBottom: 8,
+  },
+  subscriptionPrice: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    fontFamily: 'body',
+    marginBottom: 30,
+  },
+  subscriptionButtons: {
+    width: '100%',
+  },
+  startTrialButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  startTrialText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    fontFamily: 'military',
+    textTransform: 'uppercase',
   },
 });
