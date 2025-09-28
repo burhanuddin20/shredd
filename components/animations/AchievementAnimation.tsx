@@ -44,13 +44,13 @@ export const AchievementAnimation: React.FC<AchievementAnimationProps> = ({
             // Haptic feedback
             light(); // Initial light haptic
 
-            // Badge animations - MUCH BIGGER
+            // Badge animations - MASSIVE 4X BIGGER
             badgeOpacity.value = withTiming(1, { duration: 300 });
             badgeScale.value = withSequence(
-                withTiming(0.5, { duration: 200 }),
-                withTiming(1.8, { duration: 300 }),
-                withTiming(1.5, { duration: 200 }),
-                withTiming(1.6, { duration: 100 })
+                withTiming(0.2, { duration: 200 }),
+                withTiming(3.0, { duration: 300 }),
+                withTiming(3.5, { duration: 200 }),
+                withTiming(2.8, { duration: 100 })
             );
 
             // Ring animations
@@ -146,22 +146,22 @@ const styles = StyleSheet.create({
     },
     glowRing: {
         position: 'absolute',
-        width: 250,
-        height: 250,
-        borderRadius: 125,
-        borderWidth: 4,
+        width: 450,
+        height: 450,
+        borderRadius: 225,
+        borderWidth: 6,
         borderColor: COLORS.gold,
         opacity: 0.8,
     },
     glowRing2: {
-        width: 300,
-        height: 300,
-        borderRadius: 150,
+        width: 500,
+        height: 500,
+        borderRadius: 250,
         opacity: 0.4,
     },
     badgeContainer: {
-        marginBottom: 50,
-        transform: [{ scale: 2.0 }], // Make badge 2x bigger by default
+        marginBottom: 60,
+        // No static transform - let animation control the scale
     },
     textContainer: {
         alignItems: 'center',

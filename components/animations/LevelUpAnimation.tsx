@@ -194,12 +194,12 @@ export const LevelUpAnimation: React.FC<LevelUpAnimationProps> = ({
                     explosionSpeed={500}
                 />
 
-                {/* Hero Insignia */}
+                {/* Hero Insignia - MUCH BIGGER */}
                 <Animated.View style={[styles.heroInsigniaContainer, animatedHeroInsigniaStyle]}>
                     <Animated.View style={[styles.rankGlowContainer, animatedRankGlowStyle]}>
                         <View style={styles.rankGlow} />
                     </Animated.View>
-                    {getRankBadge(newRank, 140)}
+                    {getRankBadge(newRank, 200)}
                 </Animated.View>
 
                 {/* Epic Text */}
@@ -305,9 +305,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     rankGlow: {
-        width: 200,
-        height: 200,
-        borderRadius: 100,
+        width: 280,
+        height: 280,
+        borderRadius: 140,
         backgroundColor: COLORS.gold,
         opacity: 0.3,
     },
