@@ -117,8 +117,8 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.border,
     },
     statLabel: {
-        fontSize: 10,
-        fontFamily: FONTS.heading,
+        fontSize: 16,
+        fontFamily: FONTS.monoBold,
         color: COLORS.textSecondary,
         fontWeight: '600',
         textTransform: 'uppercase',

@@ -139,7 +139,7 @@ export default function ProfileScreen() {
                             <Text style={styles.recordLabel}>TOTAL FASTS</Text>
                         </View>
                         <View style={styles.recordCard}>
-                            <Text style={styles.recordValue}>{user.longestStreak}</Text>
+                            <Text style={styles.recordValue}>{user.longestStreak} Days</Text>
                             <Text style={styles.recordLabel}>LONGEST STREAK</Text>
                         </View>
                         <View style={styles.recordCard}>
@@ -316,6 +316,7 @@ const styles = StyleSheet.create({
         textShadowColor: '#000000',
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
+        textAlign: 'center',
     },
     achievementsSection: {
         gap: 16,
