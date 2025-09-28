@@ -102,8 +102,16 @@ export default function OnboardingScreen() {
   const startLoadingSequence = () => {
     setIsLoading(true);
 
+    // Start continuous haptic feedback to simulate building
+    const hapticInterval = setInterval(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 200); // Light haptic every 200ms
+
     // Simulate building personalized plan
     setTimeout(() => {
+      clearInterval(hapticInterval);
+      // Final completion haptic - like construction finishing
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       setShowSubscription(true);
       setIsLoading(false);
     }, 3000); // 3 seconds of loading animation
@@ -124,8 +132,13 @@ export default function OnboardingScreen() {
 
     useEffect(() => {
       if (isLoading) {
-        // Haptic feedback on start
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        // Strong haptic feedback on start - like construction beginning
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+        // Medium haptic after 500ms - like machinery starting
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }, 500);
 
         // Pulse animation
         pulseScale.value = withRepeat(
