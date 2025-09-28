@@ -43,7 +43,7 @@ const mockFastHistory = [
         date: '2024-01-15',
         duration: '16:30:00',
         type: '16:8',
-        status: 'Completed',
+        status: 'Current',
     },
     {
         id: '2',
@@ -175,23 +175,31 @@ export default function ProfileScreen() {
                 {/* Fast History Section */}
                 <View style={styles.historySection}>
                     <Text style={styles.sectionTitle}>FAST HISTORY</Text>
-                    <View style={styles.historyList}>
+                    <View style={styles.historyTable}>
+                        {/* Table Header */}
+                        <View style={styles.tableHeader}>
+                            <Text style={styles.headerText}>DATE</Text>
+                            <Text style={styles.headerText}>DURATION</Text>
+                            <Text style={styles.headerText}>TYPE</Text>
+                            <Text style={styles.headerText}>STATUS</Text>
+                        </View>
+
+                        {/* Table Rows */}
                         {(showAllHistory ? mockFastHistory : mockFastHistory.slice(0, 3)).map((fast, index, array) => (
-                            <View key={fast.id} style={styles.historyRow}>
-                                <View style={styles.historyInfo}>
-                                    <Text style={styles.historyDate}>{fast.date}</Text>
-                                    <Text style={styles.historyDuration}>{fast.duration}</Text>
-                                </View>
-                                <View style={styles.historyDetails}>
-                                    <Text style={styles.historyType}>{fast.type}</Text>
-                                    <Text style={[
-                                        styles.historyStatus,
-                                        fast.status === 'Completed' ? styles.completedStatus : styles.cancelledStatus
-                                    ]}>
-                                        {fast.status}
-                                    </Text>
-                                </View>
-                                {index < array.length - 1 && <View style={styles.historyDivider} />}
+                            <View key={fast.id} style={styles.tableRow}>
+                                <Text style={styles.tableCell}>{fast.date}</Text>
+                                <Text style={styles.tableCell}>{fast.duration}</Text>
+                                <Text style={styles.tableCell}>{fast.type}</Text>
+                                <Text style={[
+                                    styles.tableCell,
+                                    styles.statusCell,
+                                    fast.status === 'Completed' ? styles.completedStatus :
+                                        fast.status === 'Current' ? styles.currentStatus :
+                                            styles.cancelledStatus
+                                ]}>
+                                    {fast.status}
+                                </Text>
+                                {index < array.length - 1 && <View style={styles.rowDivider} />}
                             </View>
                         ))}
                     </View>
@@ -345,62 +353,62 @@ const styles = StyleSheet.create({
     historySection: {
         gap: 16,
     },
-    historyList: {
+    historyTable: {
         backgroundColor: COLORS.surface,
         borderRadius: 8,
         borderWidth: 1,
         borderColor: COLORS.border,
         overflow: 'hidden',
     },
-    historyRow: {
+    tableHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
+        backgroundColor: COLORS.border,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
     },
-    historyInfo: {
+    headerText: {
         flex: 1,
-    },
-    historyDate: {
-        fontSize: 16,
+        fontSize: 12,
         fontFamily: FONTS.heading,
+        color: COLORS.textSecondary,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        textAlign: 'center',
+    },
+    tableRow: {
+        flexDirection: 'row',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        position: 'relative',
+    },
+    tableCell: {
+        flex: 1,
+        fontSize: 14,
+        fontFamily: FONTS.monoBold,
         color: COLORS.textPrimary,
+        textAlign: 'center',
+    },
+    statusCell: {
         fontWeight: 'bold',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
-    historyDuration: {
-        fontSize: 14,
-        fontFamily: FONTS.monoBold,
-        color: COLORS.textSecondary,
-        marginTop: 2,
-    },
-    historyDetails: {
-        alignItems: 'flex-end',
-    },
-    historyType: {
-        fontSize: 14,
-        fontFamily: FONTS.heading,
-        color: COLORS.textSecondary,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    historyStatus: {
-        fontSize: 12,
-        fontFamily: FONTS.heading,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginTop: 2,
-    },
     completedStatus: {
-        color: COLORS.textPrimary,
+        color: '#4CAF50', // Green
+    },
+    currentStatus: {
+        color: COLORS.warning, // Gold
     },
     cancelledStatus: {
-        color: COLORS.accent,
+        color: COLORS.accent, // Red
     },
-    historyDivider: {
+    rowDivider: {
+        position: 'absolute',
+        bottom: 0,
+        left: 16,
+        right: 16,
         height: 1,
         backgroundColor: COLORS.border,
-        marginHorizontal: 16,
     },
 });
