@@ -1,7 +1,9 @@
+import { AchievementAnimation } from '@/components/animations/AchievementAnimation';
+import { LevelUpAnimation } from '@/components/animations/LevelUpAnimation';
 import { AchievementBadge } from '@/components/shared/achievement-badges';
+import { AnimatedXPProgressBar } from '@/components/shared/animated-xp-progress-bar';
 import { getRankBadge } from '@/components/shared/rank-badges';
 import { COLORS, FONTS } from '@/components/shared/theme';
-import { XPProgressBar } from '@/components/shared/xp-progress-bar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
     ACHIEVEMENTS,
@@ -9,6 +11,7 @@ import {
     getRankName,
     UserProfile,
 } from '@/constants/game';
+import { useAnimations } from '@/hooks/use-animations';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -81,10 +84,23 @@ export default function ProfileScreen() {
     });
 
     const [user] = useState<UserProfile>(mockUser);
+    const [previousXP] = useState(user.totalXP - 50); // Mock previous XP for animation
     const [showAllAchievements, setShowAllAchievements] = useState(false);
     const [showAllHistory, setShowAllHistory] = useState(false);
     const userLevel = calculateLevel(user.totalXP);
     const rankName = getRankName(userLevel.level);
+
+    // Animation hooks
+    const {
+        levelUpVisible,
+        levelUpData,
+        triggerLevelUp,
+        closeLevelUp,
+        achievementVisible,
+        achievementData,
+        triggerAchievementUnlock,
+        closeAchievement,
+    } = useAnimations();
 
     if (!fontsLoaded) {
         return null;
@@ -120,12 +136,14 @@ export default function ProfileScreen() {
 
                 {/* XP Progress Bar Section */}
                 <View style={styles.xpSection}>
-                    <XPProgressBar
+                    <AnimatedXPProgressBar
                         currentXP={user.totalXP}
+                        previousXP={previousXP}
                         currentStreak={user.currentStreak}
                         showLevel={true}
                         showXP={true}
                         showCurrentStreak={true}
+                        onLevelUp={() => triggerLevelUp(userLevel.level, 50)}
                     />
                 </View>
 
@@ -153,11 +171,15 @@ export default function ProfileScreen() {
                     <Text style={styles.sectionTitle}>ACHIEVEMENTS</Text>
                     <View style={styles.achievementsGrid}>
                         {(showAllAchievements ? ACHIEVEMENTS : ACHIEVEMENTS.filter(achievement => user.achievements.includes(achievement.id)).slice(0, 4)).map((achievement) => (
-                            <AchievementBadge
+                            <TouchableOpacity
                                 key={achievement.id}
-                                achievement={achievement}
-                                isUnlocked={user.achievements.includes(achievement.id)}
-                            />
+                                onPress={() => triggerAchievementUnlock(achievement, user.achievements.includes(achievement.id))}
+                            >
+                                <AchievementBadge
+                                    achievement={achievement}
+                                    isUnlocked={user.achievements.includes(achievement.id)}
+                                />
+                            </TouchableOpacity>
                         ))}
                     </View>
                     {ACHIEVEMENTS.length > 4 && (
@@ -214,6 +236,26 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
+
+                {/* Animation Modals */}
+                {levelUpVisible && levelUpData && (
+                    <LevelUpAnimation
+                        visible={levelUpVisible}
+                        onClose={closeLevelUp}
+                        newLevel={levelUpData.newLevel}
+                        newRank={levelUpData.newRank}
+                        xpEarned={levelUpData.xpEarned}
+                    />
+                )}
+
+                {achievementVisible && achievementData && (
+                    <AchievementAnimation
+                        visible={achievementVisible}
+                        onClose={closeAchievement}
+                        achievement={achievementData.achievement}
+                        isUnlocked={achievementData.isUnlocked}
+                    />
+                )}
             </ScrollView>
         </SafeAreaView>
     );

@@ -1,3 +1,6 @@
+import { AchievementAnimation } from '@/components/animations/AchievementAnimation';
+import { AnimationDemo } from '@/components/animations/AnimationDemo';
+import { LevelUpAnimation } from '@/components/animations/LevelUpAnimation';
 import { ProgressRing } from '@/components/shared/progress-ring';
 import { COLORS, FONTS, SIZES } from '@/components/shared/theme';
 import {
@@ -8,6 +11,7 @@ import {
     getXPReward,
     UserProfile,
 } from '@/constants/game';
+import { useAnimations } from '@/hooks/use-animations';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -53,6 +57,18 @@ export default function HomeScreen() {
 
     // User data
     const [user] = useState<UserProfile>(mockUser);
+
+    // Animation hooks
+    const {
+        levelUpVisible,
+        levelUpData,
+        triggerLevelUp,
+        closeLevelUp,
+        achievementVisible,
+        achievementData,
+        triggerAchievementUnlock,
+        closeAchievement,
+    } = useAnimations();
 
     const userLevel = calculateLevel(user.totalXP);
     const rankName = getRankName(userLevel.level);
@@ -189,6 +205,32 @@ export default function HomeScreen() {
                         {currentFast ? 'END FAST' : 'START FAST'}
                     </Text>
                 </TouchableOpacity>
+
+                {/* Animation Demo - Remove this in production */}
+                <AnimationDemo
+                    onTriggerLevelUp={triggerLevelUp}
+                    onTriggerAchievement={triggerAchievementUnlock}
+                />
+
+                {/* Animation Modals */}
+                {levelUpVisible && levelUpData && (
+                    <LevelUpAnimation
+                        visible={levelUpVisible}
+                        onClose={closeLevelUp}
+                        newLevel={levelUpData.newLevel}
+                        newRank={levelUpData.newRank}
+                        xpEarned={levelUpData.xpEarned}
+                    />
+                )}
+
+                {achievementVisible && achievementData && (
+                    <AchievementAnimation
+                        visible={achievementVisible}
+                        onClose={closeAchievement}
+                        achievement={achievementData.achievement}
+                        isUnlocked={achievementData.isUnlocked}
+                    />
+                )}
             </ScrollView>
         </SafeAreaView>
     );
