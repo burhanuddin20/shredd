@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="none"/>
+  <!-- Shield -->
+  <path d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+        fill="none" stroke="#4B5320" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M64 36 C56 48, 76 56, 64 76 C80 64, 80 50, 70 40 C72 48,64 50,64 36 Z" fill="none" stroke="#4B5320" stroke-width="6"/>
+</svg>

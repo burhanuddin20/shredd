@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="none"/>
+  <!-- Shield -->
+  <path d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+        fill="none" stroke="#4B5320" stroke-width="8" stroke-linejoin="round"/>
+  
+    <g stroke="#4B5320" stroke-width="6">
+      <path d="M40 72 L88 72"/>
+      <path d="M40 60 L88 60"/>
+      <path d="M40 48 L88 48"/>
+      <path d="M40 84 L88 84"/>
+    </g>
+    
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="none"/>
+  <!-- Shield -->
+  <path d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+        fill="none" stroke="#4B5320" stroke-width="8" stroke-linejoin="round"/>
+  
+    <path d="M48 80 L64 52 L80 80" fill="none" stroke="#4B5320" stroke-width="8" stroke-linejoin="round"/>
+    
+</svg>

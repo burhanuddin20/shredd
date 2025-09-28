@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="none"/>
+  <!-- Shield -->
+  <path d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
+        fill="none" stroke="#4B5320" stroke-width="8" stroke-linejoin="round"/>
+  
+    <polygon points="64,38 70,56 90,56 74,68 80,86 64,76 48,86 54,68 38,56 58,56"
+             fill="none" stroke="#4B5320" stroke-width="6"/>
+    
+</svg>
