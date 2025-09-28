@@ -14,7 +14,7 @@ export const AnimationDemo: React.FC<AnimationDemoProps> = ({
 }) => {
 
     const handleLevelUp = () => {
-        onTriggerLevelUp(5, 150); // Level 5, 150 XP earned
+        onTriggerLevelUp(8, 250); // Level 8, 250 XP earned - more dramatic!
     };
 
     const handleAchievementUnlock = () => {

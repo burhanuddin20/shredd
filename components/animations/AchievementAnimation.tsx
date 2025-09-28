@@ -1,5 +1,6 @@
 import { AchievementBadge } from '@/components/shared/achievement-badges';
 import { COLORS, FONTS } from '@/components/shared/theme';
+import { useHaptics } from '@/hooks/use-haptics';
 import React, { useEffect } from 'react';
 import { Dimensions, Modal, StyleSheet, Text, View } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -26,6 +27,9 @@ export const AchievementAnimation: React.FC<AchievementAnimationProps> = ({
     achievement,
     isUnlocked,
 }) => {
+    // Haptics
+    const { success, light } = useHaptics();
+
     // Animation values
     const badgeScale = useSharedValue(0);
     const badgeOpacity = useSharedValue(0);
@@ -37,6 +41,9 @@ export const AchievementAnimation: React.FC<AchievementAnimationProps> = ({
 
     useEffect(() => {
         if (visible) {
+            // Haptic feedback
+            light(); // Initial light haptic
+            
             // Badge animations
             badgeOpacity.value = withTiming(1, { duration: 300 });
             badgeScale.value = withSequence(
@@ -61,7 +68,8 @@ export const AchievementAnimation: React.FC<AchievementAnimationProps> = ({
             textOpacity.value = withDelay(800, withTiming(1, { duration: 500 }));
             textTranslateY.value = withDelay(800, withTiming(0, { duration: 500 }));
 
-            // Confetti
+            // Confetti + Haptics
+            setTimeout(() => success(), 600); // Success haptic for confetti
             confettiTrigger.value = withDelay(600, withTiming(1, { duration: 100 }));
 
             // Auto close after 3 seconds
@@ -92,15 +100,14 @@ export const AchievementAnimation: React.FC<AchievementAnimationProps> = ({
         <Modal transparent visible={visible} animationType="fade">
             <View style={styles.overlay}>
                 {/* Confetti */}
-                {confettiTrigger.value > 0 && (
-                    <ConfettiCannon
-                        count={50}
-                        origin={{ x: width / 2, y: height / 2 }}
-                        colors={[COLORS.gold, COLORS.silver, COLORS.bronze]}
-                        autoStart={true}
-                        fadeOut={true}
-                    />
-                )}
+                <ConfettiCannon
+                    count={50}
+                    origin={{ x: width / 2, y: height / 2 }}
+                    colors={[COLORS.gold, COLORS.silver, COLORS.bronze]}
+                    autoStart={visible}
+                    fadeOut={true}
+                    explosionSpeed={400}
+                />
 
                 {/* Glowing Ring */}
                 <Animated.View style={[styles.ringContainer, animatedRingStyle]}>
