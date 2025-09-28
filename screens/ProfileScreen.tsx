@@ -132,7 +132,6 @@ export default function ProfileScreen() {
 
                 {/* Records Section */}
                 <View style={styles.recordsSection}>
-                    <Text style={styles.sectionTitle}>RECORDS</Text>
                     <View style={styles.recordsRow}>
                         <View style={styles.recordCard}>
                             <Text style={styles.recordValue}>{user.totalFasts}</Text>
@@ -153,7 +152,7 @@ export default function ProfileScreen() {
                 <View style={styles.achievementsSection}>
                     <Text style={styles.sectionTitle}>ACHIEVEMENTS</Text>
                     <View style={styles.achievementsGrid}>
-                        {(showAllAchievements ? ACHIEVEMENTS : ACHIEVEMENTS.slice(0, 8)).map((achievement) => (
+                        {(showAllAchievements ? ACHIEVEMENTS : ACHIEVEMENTS.filter(achievement => user.achievements.includes(achievement.id)).slice(0, 4)).map((achievement) => (
                             <AchievementBadge
                                 key={achievement.id}
                                 achievement={achievement}
@@ -161,7 +160,7 @@ export default function ProfileScreen() {
                             />
                         ))}
                     </View>
-                    {ACHIEVEMENTS.length > 8 && (
+                    {ACHIEVEMENTS.length > 4 && (
                         <TouchableOpacity
                             style={styles.toggleButton}
                             onPress={() => setShowAllAchievements(!showAllAchievements)}
@@ -324,8 +323,8 @@ const styles = StyleSheet.create({
     achievementsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
-        justifyContent: 'space-between',
+        gap: 1,
+        justifyContent: 'space-evenly',
     },
     toggleButton: {
         backgroundColor: COLORS.buttonBg,
