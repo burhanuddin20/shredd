@@ -13,7 +13,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import {
   GestureHandlerRootView,
@@ -80,11 +80,20 @@ const onboardingSteps = [
     icon: 'list.bullet',
     color: '#556B2F',
   },
+  {
+    id: 7,
+    title: 'SOLDIER NAME',
+    subtitle: 'IDENTIFY YOURSELF',
+    description: '',
+    icon: 'person',
+    color: '#556B2F',
+  },
 ];
 
 export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
   const colorScheme = useColorScheme();
@@ -97,12 +106,13 @@ export default function OnboardingScreen() {
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // On final step, require plan selection
-      if (selectedPlan) {
+      // On final step, require name input
+      if (userName.trim()) {
+        console.log('User name:', userName, 'Selected plan:', selectedPlan);
         startLoadingSequence();
       } else {
-        // Could show an alert here asking user to select a plan
-        console.log('No plan selected');
+        // Could show an alert here asking user to enter their name
+        console.log('No name entered');
       }
     }
   };
@@ -283,6 +293,7 @@ export default function OnboardingScreen() {
     }
 
     // Swipe left (go forward) - minimum distance and velocity
+    // Allow swipe forward on all steps except the final name step
     if (translationX < -50 && velocityX < -300 && currentStep < onboardingSteps.length - 1) {
       nextStep();
     }
@@ -326,7 +337,7 @@ export default function OnboardingScreen() {
 
             {/* Content */}
             <View style={styles.content}>
-              {currentStep !== 0 && currentStep !== 5 && (
+              {currentStep !== 0 && currentStep !== 5 && currentStep !== 6 && (
                 <View style={styles.iconContainer}>
                   <IconSymbol
                     name={currentStepData.icon as any}
@@ -335,7 +346,7 @@ export default function OnboardingScreen() {
                   />
                 </View>
               )}
-              {currentStep === 5 && (
+              {(currentStep === 5 || currentStep === 6) && (
                 <View style={styles.smallIconContainer}>
                   <IconSymbol
                     name={currentStepData.icon as any}
@@ -350,7 +361,7 @@ export default function OnboardingScreen() {
               </Text>
 
               <Text style={[
-                currentStep === 5 ? styles.subtitleCompact : styles.subtitle,
+                (currentStep === 5 || currentStep === 6) ? styles.subtitleCompact : styles.subtitle,
                 { color: colors.accent }
               ]}>
                 {currentStepData.subtitle}
@@ -395,6 +406,32 @@ export default function OnboardingScreen() {
                   ))}
                 </View>
               )}
+
+              {/* Special content for name input */}
+              {currentStep === 6 && (
+                <View style={styles.nameFormContainer}>
+                  <Text style={[styles.nameFormLabel, { color: colors.beige }]}>
+                    Enter your soldier name:
+                  </Text>
+                  <TextInput
+                    style={[styles.nameInput, {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.beige
+                    }]}
+                    value={userName}
+                    onChangeText={setUserName}
+                    placeholder="Your name"
+                    placeholderTextColor={colors.secondary}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    maxLength={20}
+                  />
+                  <Text style={[styles.nameFormHint, { color: colors.secondary }]}>
+                    This will be your display name in the app
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Navigation Buttons */}
@@ -418,7 +455,11 @@ export default function OnboardingScreen() {
                       : 'Next'
                   }
                   onPress={nextStep}
-                  variant={currentStep === onboardingSteps.length - 1 && !selectedPlan ? "secondary" : "primary"}
+                  variant={
+                    currentStep === onboardingSteps.length - 1 && !userName.trim()
+                      ? "secondary"
+                      : "primary"
+                  }
                   size="medium"
                 />
               </View>
@@ -617,6 +658,36 @@ const styles = StyleSheet.create({
   navigationRight: {
     flex: 1,
     alignItems: 'flex-end',
+  },
+  // Name Form Styles
+  nameFormContainer: {
+    marginTop: 15,
+    width: '100%',
+    padding: 10,
+  },
+  nameFormLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+    letterSpacing: 1,
+    fontFamily: 'military',
+  },
+  nameInput: {
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontFamily: 'body',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  nameFormHint: {
+    fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.8,
+    fontFamily: 'body',
   },
   // Loading Overlay Styles
   loadingOverlay: {
