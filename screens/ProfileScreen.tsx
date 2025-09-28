@@ -1,6 +1,7 @@
 import { AchievementBadge } from '@/components/shared/achievement-badges';
 import { getRankBadge } from '@/components/shared/rank-badges';
 import { COLORS, FONTS } from '@/components/shared/theme';
+import { XPProgressBar } from '@/components/shared/xp-progress-bar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
     ACHIEVEMENTS,
@@ -12,7 +13,6 @@ import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
     ScrollView,
     StyleSheet,
     Text,
@@ -21,15 +21,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const { width } = Dimensions.get('window');
-
 // Mock user data
 const mockUser: UserProfile = {
     id: '1',
     username: 'trilly',
     email: 'scout@surveycorps.com',
     profilePicture: 'https://i.pravatar.cc/100',
-    totalXP: 250,
+    totalXP: 100,
     currentStreak: 5,
     longestStreak: 12,
     totalFasts: 15,
@@ -119,6 +117,18 @@ export default function ProfileScreen() {
                         </View>
                     </View>
                 </View>
+
+                {/* XP Progress Bar Section */}
+                <View style={styles.xpSection}>
+                    <XPProgressBar
+                        currentXP={user.totalXP}
+                        currentStreak={user.currentStreak}
+                        showLevel={true}
+                        showXP={true}
+                        showCurrentStreak={true}
+                    />
+                </View>
+
 
                 {/* Records Section */}
                 <View style={styles.recordsSection}>
@@ -247,7 +257,7 @@ const styles = StyleSheet.create({
     },
     username: {
         fontSize: 24,
-        fontFamily: FONTS.heading,
+        fontFamily: FONTS.monoBold,
         color: COLORS.textPrimary,
         fontWeight: 'bold',
         textTransform: 'uppercase',
@@ -255,11 +265,15 @@ const styles = StyleSheet.create({
     },
     rank: {
         fontSize: 16,
-        fontFamily: FONTS.heading,
+        fontFamily: FONTS.monoBold,
         color: COLORS.textSecondary,
         textTransform: 'uppercase',
         letterSpacing: 1,
         marginTop: 4,
+    },
+    xpSection: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
     recordsSection: {
         gap: 16,
