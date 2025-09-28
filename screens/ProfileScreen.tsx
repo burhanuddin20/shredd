@@ -170,17 +170,27 @@ export default function ProfileScreen() {
                 <View style={styles.achievementsSection}>
                     <Text style={styles.sectionTitle}>ACHIEVEMENTS</Text>
                     <View style={styles.achievementsGrid}>
-                        {(showAllAchievements ? ACHIEVEMENTS : ACHIEVEMENTS.filter(achievement => user.achievements.includes(achievement.id)).slice(0, 4)).map((achievement) => (
-                            <TouchableOpacity
-                                key={achievement.id}
-                                onPress={() => triggerAchievementUnlock(achievement, user.achievements.includes(achievement.id))}
-                            >
-                                <AchievementBadge
-                                    achievement={achievement}
-                                    isUnlocked={user.achievements.includes(achievement.id)}
-                                />
-                            </TouchableOpacity>
-                        ))}
+                        {(showAllAchievements ? ACHIEVEMENTS : ACHIEVEMENTS.filter(achievement => user.achievements.includes(achievement.id)).slice(0, 4)).map((achievement) => {
+                            const isUnlocked = user.achievements.includes(achievement.id);
+                            return isUnlocked ? (
+                                <TouchableOpacity
+                                    key={achievement.id}
+                                    onPress={() => triggerAchievementUnlock(achievement, true)}
+                                >
+                                    <AchievementBadge
+                                        achievement={achievement}
+                                        isUnlocked={true}
+                                    />
+                                </TouchableOpacity>
+                            ) : (
+                                <View key={achievement.id}>
+                                    <AchievementBadge
+                                        achievement={achievement}
+                                        isUnlocked={false}
+                                    />
+                                </View>
+                            );
+                        })}
                     </View>
                     {ACHIEVEMENTS.length > 4 && (
                         <TouchableOpacity
