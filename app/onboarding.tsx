@@ -1,30 +1,29 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { MilitaryButton } from '@/components/ui/military-button';
-import { MilitaryCard } from '@/components/ui/military-card';
+// import { MilitaryCard } from '@/components/ui/military-card';
 import { FASTING_PLANS } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const { width } = Dimensions.get('window');
+// const { width } = Dimensions.get('window');
 
 const onboardingSteps = [
   {
     id: 1,
     title: 'WELCOME TO SHREDD',
     subtitle: 'MILITARY-GRADE FASTING PROTOCOL',
-    description: 'Transform your intermittent fasting journey with gamification inspired by Attack on Titan. Rise through the ranks and become a legendary warrior!',
-    icon: 'shield.fill',
+    description: 'Transform your intermittent fasting journey. Rise through the ranks get shredded and become a legendary warrior!',
+    icon: 'shield',
     color: '#556B2F',
   },
   {
@@ -32,7 +31,7 @@ const onboardingSteps = [
     title: 'FASTING PROTOCOLS',
     subtitle: 'MISSION PARAMETERS',
     description: '• Fast for the duration of your chosen plan\n• Stay hydrated with water, tea, or coffee\n• Avoid caloric intake during fasting\n• Track your progress and earn XP',
-    icon: 'list.bullet.clipboard.fill',
+    icon: 'list.bullet',
     color: '#DAA520',
   },
   {
@@ -40,7 +39,7 @@ const onboardingSteps = [
     title: 'MISSION ADVANTAGES',
     subtitle: 'FASTING BENEFITS',
     description: '• Improved metabolic health\n• Enhanced mental clarity\n• Weight management\n• Cellular repair and longevity\n• Increased energy levels',
-    icon: 'heart.fill',
+    icon: 'heart',
     color: '#556B2F',
   },
   {
@@ -48,22 +47,30 @@ const onboardingSteps = [
     title: 'MILITARY DECORATIONS',
     subtitle: 'ACHIEVEMENT SYSTEM',
     description: 'Earn badges and XP for completing fasts, maintaining streaks, and reaching milestones. From your first fast to becoming a 365-day veteran!',
-    icon: 'medal.fill',
+    icon: 'medal',
     color: '#DAA520',
   },
   {
     id: 5,
-    title: 'SURVEY CORPS THEME',
-    subtitle: 'MILITARY AESTHETICS',
-    description: 'Experience the app with military-grade styling, ranks inspired by the Survey Corps, and a dark theme that reflects the world beyond the walls.',
-    icon: 'building.columns.fill',
+    title: 'SQUAD UP',
+    subtitle: 'SHREDD with your friends',
+    description: 'Join a squad and partner with your friends or other users and train together.',
+    icon: 'person.2',
     color: '#6B705C',
   },
   {
     id: 6,
-    title: 'SELECT MISSION PLAN',
+    title: 'MISSION PLAN',
     subtitle: 'CHOOSE YOUR PROTOCOL',
-    description: 'Start with the 7-day free trial, then continue your journey for just $2/month. Choose from multiple fasting plans to suit your warrior level.',
+    description: '',
+    icon: 'list.bullet',
+    color: '#556B2F',
+  },
+  {
+    id: 7,
+    title: 'SUBSCRIPTION',
+    subtitle: 'JOIN THE ARMY',
+    description: 'Start with the 7-day free trial, then continue your journey for just $2/month.',
     icon: 'creditcard.fill',
     color: '#556B2F',
   },
@@ -71,6 +78,9 @@ const onboardingSteps = [
 
 export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
 
@@ -78,7 +88,14 @@ export default function OnboardingScreen() {
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      router.replace('/(tabs)');
+      // On final step, require plan selection
+      if (selectedPlan) {
+        // TODO: Save selected plan to user preferences
+        console.log('Selected plan:', selectedPlan);
+        router.replace('/(tabs)');
+      } else {
+        // Could show an alert here asking user to select a plan
+      }
     }
   };
 
@@ -88,9 +105,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  const skipOnboarding = () => {
-    router.replace('/(tabs)');
-  };
 
   const currentStepData = onboardingSteps[currentStep];
 
@@ -125,18 +139,22 @@ export default function OnboardingScreen() {
           ))}
         </View>
 
-        {/* Skip Button */}
-        <TouchableOpacity style={styles.skipButton} onPress={skipOnboarding}>
-          <Text style={[styles.skipText, { color: colors.beige }]}>SKIP</Text>
-        </TouchableOpacity>
-
         {/* Content */}
         <View style={styles.content}>
-          {currentStep !== 0 && (
+          {currentStep !== 0 && currentStep !== 5 && (
             <View style={styles.iconContainer}>
               <IconSymbol
-                name={currentStepData.icon}
+                name={currentStepData.icon as any}
                 size={80}
+                color={currentStepData.color}
+              />
+            </View>
+          )}
+          {currentStep === 5 && (
+            <View style={styles.smallIconContainer}>
+              <IconSymbol
+                name={currentStepData.icon as any}
+                size={40}
                 color={currentStepData.color}
               />
             </View>
@@ -146,27 +164,47 @@ export default function OnboardingScreen() {
             {currentStepData.title}
           </Text>
 
-          <Text style={[styles.subtitle, { color: colors.accent }]}>
+          <Text style={[
+            currentStep === 5 ? styles.subtitleCompact : styles.subtitle,
+            { color: colors.accent }
+          ]}>
             {currentStepData.subtitle}
           </Text>
 
-          <Text style={[styles.description, { color: colors.beige }]}>
-            {currentStepData.description}
-          </Text>
+          {currentStepData.description && (
+            <Text style={[styles.description, { color: colors.beige }]}>
+              {currentStepData.description}
+            </Text>
+          )}
 
           {/* Special content for plan selection */}
           {currentStep === 5 && (
             <View style={styles.plansContainer}>
-              <Text style={[styles.plansTitle, { color: colors.beige }]}>
-                AVAILABLE PROTOCOLS:
-              </Text>
-              {FASTING_PLANS.slice(0, 3).map((plan) => (
-                <MilitaryCard key={plan.id} style={styles.planCard}>
-                  <Text style={[styles.planName, { color: colors.beige }]}>{plan.name}</Text>
-                  <Text style={[styles.planDifficulty, { color: colors.accent }]}>
-                    {plan.difficulty}
-                  </Text>
-                </MilitaryCard>
+              {FASTING_PLANS.map((plan) => (
+                <TouchableOpacity
+                  key={plan.id}
+                  onPress={() => setSelectedPlan(plan.id)}
+                  style={[
+                    styles.planCard,
+                    selectedPlan === plan.id && styles.selectedPlanCard,
+                    { borderColor: selectedPlan === plan.id ? colors.accent : colors.border }
+                  ]}
+                >
+                  <View style={styles.planCardContent}>
+                    <View style={styles.planInfo}>
+                      <Text style={[styles.planName, { color: colors.beige }]}>{plan.name}</Text>
+                      <Text style={[styles.planDescription, { color: colors.beige }]}>
+                        {plan.fastingHours}h fast / {24 - plan.fastingHours}h eating
+                      </Text>
+                      <Text style={[styles.planDifficulty, { color: colors.accent }]}>
+                        {plan.difficulty}
+                      </Text>
+                    </View>
+                    {selectedPlan === plan.id && (
+                      <IconSymbol name="checkmark.circle.fill" size={24} color={colors.accent} />
+                    )}
+                  </View>
+                </TouchableOpacity>
               ))}
             </View>
           )}
@@ -184,9 +222,13 @@ export default function OnboardingScreen() {
           )}
 
           <MilitaryButton
-            title={currentStep === onboardingSteps.length - 1 ? 'Start Mission' : 'Next'}
+            title={
+              currentStep === onboardingSteps.length - 1
+                ? (selectedPlan ? 'Start Mission' : 'Select Plan to Continue')
+                : 'Next'
+            }
             onPress={nextStep}
-            variant="primary"
+            variant={currentStep === onboardingSteps.length - 1 && !selectedPlan ? "secondary" : "primary"}
             size="medium"
           />
         </View>
@@ -242,18 +284,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  skipButton: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    padding: 8,
-  },
-  skipText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    fontFamily: 'military',
-  },
   content: {
     flex: 1,
     alignItems: 'center',
@@ -262,6 +292,9 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 30,
+  },
+  smallIconContainer: {
+    marginBottom: 15,
   },
   title: {
     fontSize: 24,
@@ -279,6 +312,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontFamily: 'body',
   },
+  subtitleCompact: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 10,
+    letterSpacing: 0.5,
+    fontFamily: 'body',
+  },
   description: {
     fontSize: 16,
     textAlign: 'center',
@@ -287,31 +328,79 @@ const styles = StyleSheet.create({
     fontFamily: 'body',
   },
   plansContainer: {
-    marginTop: 30,
+    marginTop: 15,
     width: '100%',
   },
   plansTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 8,
     textAlign: 'center',
     letterSpacing: 1,
     fontFamily: 'military',
   },
+  plansSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    fontFamily: 'body',
+    opacity: 0.8,
+  },
   planCard: {
-    marginBottom: 10,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  selectedPlanCard: {
+    borderWidth: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  planCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planInfo: {
+    flex: 1,
   },
   planName: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
     letterSpacing: 0.5,
     fontFamily: 'body',
   },
+  planDescription: {
+    fontSize: 12,
+    marginBottom: 2,
+    opacity: 0.8,
+    fontFamily: 'body',
+  },
   planDifficulty: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     fontFamily: 'body',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  trialInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 12,
+    gap: 6,
+  },
+  trialText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    fontFamily: 'military',
   },
   navigation: {
     flexDirection: 'row',

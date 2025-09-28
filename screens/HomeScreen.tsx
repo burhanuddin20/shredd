@@ -13,6 +13,7 @@ import {
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
+import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Alert,
@@ -31,7 +32,7 @@ const { width } = Dimensions.get('window');
 const mockUser: UserProfile = {
     id: '1',
     username: 'trilly',
-    email: 'scout@surveycorps.com',
+    email: 'scout@corps.com',
     profilePicture: 'https://i.pravatar.cc/100',
     totalXP: 250,
     currentStreak: 5,
@@ -212,6 +213,14 @@ export default function HomeScreen() {
                     onTriggerAchievement={triggerAchievementUnlock}
                 />
 
+                {/* Onboarding Test Button */}
+                <TouchableOpacity
+                    style={styles.testButton}
+                    onPress={() => router.push('/onboarding')}
+                >
+                    <Text style={styles.testButtonText}>🧪 TEST ONBOARDING</Text>
+                </TouchableOpacity>
+
                 {/* Animation Modals */}
                 {levelUpVisible && levelUpData && (
                     <LevelUpAnimation
@@ -326,6 +335,22 @@ const styles = StyleSheet.create({
     },
     leaderboardPosition: {
         fontSize: 18,
+        fontFamily: FONTS.heading,
+        color: COLORS.textPrimary,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    testButton: {
+        backgroundColor: COLORS.accent,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 6,
+        marginTop: 16,
+        alignItems: 'center',
+    },
+    testButtonText: {
+        fontSize: 16,
         fontFamily: FONTS.heading,
         color: COLORS.textPrimary,
         fontWeight: 'bold',

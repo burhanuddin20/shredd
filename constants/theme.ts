@@ -1,5 +1,4 @@
 /**
- * Attack on Titan inspired military theme colors
  * Near-black background with muted military green accents
  */
 
@@ -16,7 +15,6 @@ export const Colors = {
     icon: '#64748b',
     tabIconDefault: '#64748b',
     tabIconSelected: tintColorLight,
-    // Attack on Titan military theme colors
     primary: '#0B0C0C', // Near-black
     secondary: '#111111', // Dark surface
     accent: '#556B2F', // Muted military green
@@ -39,7 +37,6 @@ export const Colors = {
     icon: '#6B705C', // Desaturated military green
     tabIconDefault: '#6B705C',
     tabIconSelected: '#556B2F', // Muted military green
-    // Attack on Titan military theme colors
     primary: '#0B0C0C', // Near-black
     secondary: '#111111', // Dark surface
     accent: '#556B2F', // Muted military green

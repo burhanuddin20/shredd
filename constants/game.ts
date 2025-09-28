@@ -1,4 +1,3 @@
-// Attack on Titan inspired rank names
 export const RANKS = [
   'Cadet',
   'Trainee', 
@@ -29,7 +28,7 @@ export const FASTING_PLANS = [
   { id: '16:8', name: '16:8 Advanced', fastingHours: 16, eatingHours: 8, difficulty: 'Advanced' },
   { id: '18:6', name: '18:6 Advanced', fastingHours: 18, eatingHours: 6, difficulty: 'Advanced' },
   { id: '20:4', name: '20:4 Expert', fastingHours: 20, eatingHours: 4, difficulty: 'Expert' },
-  { id: '24:0', name: '24:0 Titan', fastingHours: 24, eatingHours: 0, difficulty: 'Titan' },
+  { id: '23:1', name: '23:1 Titan', fastingHours: 23, eatingHours: 1, difficulty: 'Titan' },
 ];
 
 // Achievement definitions

@@ -28,7 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const mockUser: UserProfile = {
     id: '1',
     username: 'trilly',
-    email: 'scout@surveycorps.com',
+    email: 'scout@corps.com',
     profilePicture: 'https://i.pravatar.cc/100',
     totalXP: 100,
     currentStreak: 5,
