@@ -11,9 +11,15 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
+import {
+  GestureHandlerRootView,
+  PanGestureHandler,
+  PanGestureHandlerGestureEvent
+} from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -85,11 +91,13 @@ export default function OnboardingScreen() {
   const colors = Colors[colorScheme ?? 'dark'];
 
   const nextStep = () => {
+    // Haptic feedback for navigation
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (currentStep < onboardingSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // On final step, require plan selection
-      console.log('On final step - Selected plan:', selectedPlan);
       if (selectedPlan) {
         startLoadingSequence();
       } else {
@@ -120,7 +128,6 @@ export default function OnboardingScreen() {
   const handleSubscriptionComplete = () => {
     setShowSubscription(false);
     // TODO: Save selected plan to user preferences
-    console.log('Selected plan:', selectedPlan);
     router.replace('/(tabs)');
   };
 
@@ -258,8 +265,26 @@ export default function OnboardingScreen() {
   };
 
   const prevStep = () => {
+    // Haptic feedback for navigation
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
+    }
+  };
+
+  // Swipe gesture handler
+  const handleSwipeGesture = (event: PanGestureHandlerGestureEvent) => {
+    const { translationX, velocityX } = event.nativeEvent;
+
+    // Swipe right (go back) - minimum distance and velocity
+    if (translationX > 50 && velocityX > 300 && currentStep > 0) {
+      prevStep();
+    }
+
+    // Swipe left (go forward) - minimum distance and velocity
+    if (translationX < -50 && velocityX < -300 && currentStep < onboardingSteps.length - 1) {
+      nextStep();
     }
   };
 
@@ -267,139 +292,147 @@ export default function OnboardingScreen() {
   const currentStepData = onboardingSteps[currentStep];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero Section for first step */}
-        {currentStep === 0 && (
-          <View style={styles.heroSection}>
-            <View style={styles.warriorSilhouette}>
-              <IconSymbol name="figure.walk" size={120} color={colors.accent} />
-              <View style={[styles.cloak, { backgroundColor: colors.accent + '40' }]} />
-            </View>
-            <Text style={[styles.heroText, { color: colors.beige }]}>
-              START YOUR TRAINING
-            </Text>
-          </View>
-        )}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <PanGestureHandler onGestureEvent={handleSwipeGesture}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            {/* Hero Section for first step */}
+            {currentStep === 0 && (
+              <View style={styles.heroSection}>
+                <View style={styles.warriorSilhouette}>
+                  <IconSymbol name="figure.walk" size={120} color={colors.accent} />
+                  <View style={[styles.cloak, { backgroundColor: colors.accent + '40' }]} />
+                </View>
+                <Text style={[styles.heroText, { color: colors.beige }]}>
+                  START YOUR TRAINING
+                </Text>
+              </View>
+            )}
 
-        {/* Progress Indicator */}
-        <View style={styles.progressContainer}>
-          {onboardingSteps.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.progressDot,
-                {
-                  backgroundColor: index <= currentStep ? colors.accent : colors.border,
-                },
-              ]}
-            />
-          ))}
-        </View>
-
-        {/* Content */}
-        <View style={styles.content}>
-          {currentStep !== 0 && currentStep !== 5 && (
-            <View style={styles.iconContainer}>
-              <IconSymbol
-                name={currentStepData.icon as any}
-                size={80}
-                color={currentStepData.color}
-              />
-            </View>
-          )}
-          {currentStep === 5 && (
-            <View style={styles.smallIconContainer}>
-              <IconSymbol
-                name={currentStepData.icon as any}
-                size={40}
-                color={currentStepData.color}
-              />
-            </View>
-          )}
-
-          <Text style={[styles.title, { color: colors.beige }]}>
-            {currentStepData.title}
-          </Text>
-
-          <Text style={[
-            currentStep === 5 ? styles.subtitleCompact : styles.subtitle,
-            { color: colors.accent }
-          ]}>
-            {currentStepData.subtitle}
-          </Text>
-
-          {currentStepData.description && (
-            <Text style={[styles.description, { color: colors.beige }]}>
-              {currentStepData.description}
-            </Text>
-          )}
-
-          {/* Special content for plan selection */}
-          {currentStep === 5 && (
-            <View style={styles.plansContainer}>
-              <Text style={{ color: 'white', fontSize: 16, marginBottom: 10 }}>
-              </Text>
-              {FASTING_PLANS.map((plan) => (
-                <TouchableOpacity
-                  key={plan.id}
-                  onPress={() => setSelectedPlan(plan.id)}
+            {/* Progress Indicator */}
+            <View style={styles.progressContainer}>
+              {onboardingSteps.map((_, index) => (
+                <View
+                  key={index}
                   style={[
-                    styles.planCard,
-                    selectedPlan === plan.id && styles.selectedPlanCard,
-                    { borderColor: selectedPlan === plan.id ? colors.accent : colors.border }
+                    styles.progressDot,
+                    {
+                      backgroundColor: index <= currentStep ? colors.accent : colors.border,
+                    },
                   ]}
-                >
-                  <View style={styles.planCardContent}>
-                    <View style={styles.planInfo}>
-                      <Text style={[styles.planName, { color: colors.beige }]}>{plan.name}</Text>
-                      <Text style={[styles.planDescription, { color: colors.beige }]}>
-                        {plan.fastingHours}h fast / {24 - plan.fastingHours}h eating
-                      </Text>
-                      <Text style={[styles.planDifficulty, { color: colors.accent }]}>
-                        {plan.difficulty}
-                      </Text>
-                    </View>
-                    {selectedPlan === plan.id && (
-                      <IconSymbol name="checkmark.circle.fill" size={24} color={colors.accent} />
-                    )}
-                  </View>
-                </TouchableOpacity>
+                />
               ))}
             </View>
-          )}
-        </View>
 
-        {/* Navigation Buttons */}
-        <View style={styles.navigation}>
-          {currentStep > 0 && (
-            <MilitaryButton
-              title="Previous"
-              onPress={prevStep}
-              variant="secondary"
-              size="medium"
-            />
-          )}
+            {/* Content */}
+            <View style={styles.content}>
+              {currentStep !== 0 && currentStep !== 5 && (
+                <View style={styles.iconContainer}>
+                  <IconSymbol
+                    name={currentStepData.icon as any}
+                    size={80}
+                    color={currentStepData.color}
+                  />
+                </View>
+              )}
+              {currentStep === 5 && (
+                <View style={styles.smallIconContainer}>
+                  <IconSymbol
+                    name={currentStepData.icon as any}
+                    size={40}
+                    color={currentStepData.color}
+                  />
+                </View>
+              )}
 
-          <MilitaryButton
-            title={
-              currentStep === onboardingSteps.length - 1
-                ? 'Start Mission'
-                : 'Next'
-            }
-            onPress={nextStep}
-            variant={currentStep === onboardingSteps.length - 1 && !selectedPlan ? "secondary" : "primary"}
-            size="medium"
-          />
-        </View>
-      </ScrollView>
+              <Text style={[styles.title, { color: colors.beige }]}>
+                {currentStepData.title}
+              </Text>
 
-      {/* Loading Overlay */}
-      <LoadingScreen />
+              <Text style={[
+                currentStep === 5 ? styles.subtitleCompact : styles.subtitle,
+                { color: colors.accent }
+              ]}>
+                {currentStepData.subtitle}
+              </Text>
 
-      {/* Subscription Overlay */}
-      <SubscriptionOverlay />
-    </SafeAreaView>
+              {currentStepData.description && (
+                <Text style={[styles.description, { color: colors.beige }]}>
+                  {currentStepData.description}
+                </Text>
+              )}
+
+              {/* Special content for plan selection */}
+              {currentStep === 5 && (
+                <View style={styles.plansContainer}>
+                  <Text style={{ color: 'white', fontSize: 16, marginBottom: 10 }}>
+                  </Text>
+                  {FASTING_PLANS.map((plan) => (
+                    <TouchableOpacity
+                      key={plan.id}
+                      onPress={() => setSelectedPlan(plan.id)}
+                      style={[
+                        styles.planCard,
+                        selectedPlan === plan.id && styles.selectedPlanCard,
+                        { borderColor: selectedPlan === plan.id ? colors.accent : colors.border }
+                      ]}
+                    >
+                      <View style={styles.planCardContent}>
+                        <View style={styles.planInfo}>
+                          <Text style={[styles.planName, { color: colors.beige }]}>{plan.name}</Text>
+                          <Text style={[styles.planDescription, { color: colors.beige }]}>
+                            {plan.fastingHours}h fast / {24 - plan.fastingHours}h eating
+                          </Text>
+                          <Text style={[styles.planDifficulty, { color: colors.accent }]}>
+                            {plan.difficulty}
+                          </Text>
+                        </View>
+                        {selectedPlan === plan.id && (
+                          <IconSymbol name="checkmark.circle.fill" size={24} color={colors.accent} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Navigation Buttons */}
+            <View style={styles.navigation}>
+              <View style={styles.navigationLeft}>
+                {currentStep > 0 && (
+                  <MilitaryButton
+                    title="Previous"
+                    onPress={prevStep}
+                    variant="secondary"
+                    size="medium"
+                  />
+                )}
+              </View>
+
+              <View style={styles.navigationRight}>
+                <MilitaryButton
+                  title={
+                    currentStep === onboardingSteps.length - 1
+                      ? 'Start Mission'
+                      : 'Next'
+                  }
+                  onPress={nextStep}
+                  variant={currentStep === onboardingSteps.length - 1 && !selectedPlan ? "secondary" : "primary"}
+                  size="medium"
+                />
+              </View>
+            </View>
+          </ScrollView>
+        </PanGestureHandler>
+
+        {/* Loading Overlay */}
+        <LoadingScreen />
+
+        {/* Subscription Overlay */}
+        <SubscriptionOverlay />
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -573,9 +606,17 @@ const styles = StyleSheet.create({
   navigation: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 30,
-    gap: 15,
+  },
+  navigationLeft: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  navigationRight: {
+    flex: 1,
+    alignItems: 'flex-end',
   },
   // Loading Overlay Styles
   loadingOverlay: {
