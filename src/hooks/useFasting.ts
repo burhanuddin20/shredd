@@ -1,3 +1,4 @@
+import { useDatabase } from '@/src/lib/DatabaseProvider';
 import {
     addFast,
     getActiveFast,
@@ -12,11 +13,14 @@ export const useFasting = () => {
   const [currentFast, setCurrentFast] = useState<FastType | null>(null);
   const [fastHistory, setFastHistory] = useState<FastType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isInitialized: dbInitialized } = useDatabase();
 
-  // Load initial data
+  // Load initial data only after database is initialized
   useEffect(() => {
-    loadFastData();
-  }, []);
+    if (dbInitialized) {
+      loadFastData();
+    }
+  }, [dbInitialized]);
 
   const loadFastData = async () => {
     try {

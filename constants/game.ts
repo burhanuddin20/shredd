@@ -52,6 +52,7 @@ export const ACHIEVEMENTS = [
   { id: 'total_50', name: '50 Fast Master', description: 'Complete 50 fasts', xpReward: 750 },
   { id: 'total_100', name: '100 Fast Legend', description: 'Complete 100 fasts', xpReward: 1500 },
   { id: 'total_200', name: '200 Fast Titan', description: 'Complete 200 fasts', xpReward: 3000 },
+  // todo add one for starting fast
 ];
 
 // XP rewards for completing fasts
@@ -61,7 +62,7 @@ export const getXPReward = (fastingHours: number): number => {
   if (fastingHours >= 18) return 60;
   if (fastingHours >= 16) return 40;
   if (fastingHours >= 12) return 20;
-  return 10;
+  return 150;
 };
 
 // Calculate user level from total XP

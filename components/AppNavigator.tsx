@@ -7,10 +7,11 @@ import { StyleSheet, Text, View } from 'react-native';
 
 export default function AppNavigator() {
     const { isInitialized: dbInitialized } = useDatabase();
-    const { userProfile, isLoading } = useUserProfile();
+    const { userProfile, isLoading: userLoading } = useUserProfile();
 
     useEffect(() => {
-        if (dbInitialized && !isLoading) {
+        // Only navigate when database is initialized and user data has been loaded
+        if (dbInitialized && !userLoading) {
             if (userProfile) {
                 // User is onboarded, go to tabs
                 router.replace('/(tabs)');
@@ -19,13 +20,13 @@ export default function AppNavigator() {
                 router.replace('/onboarding');
             }
         }
-    }, [dbInitialized, isLoading, userProfile]);
+    }, [dbInitialized, userLoading, userProfile]);
 
-    // Show loading while checking onboarding status
-    if (!dbInitialized || isLoading) {
+    // Show loading while database is initializing or user data is loading
+    if (!dbInitialized || userLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Loading...</Text>
+                <Text style={styles.loadingText}>Initializing App...</Text>
             </View>
         );
     }

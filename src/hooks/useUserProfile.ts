@@ -1,3 +1,4 @@
+import { useDatabase } from '@/src/lib/DatabaseProvider';
 import {
   Achievement,
   getAchievements,
@@ -15,11 +16,14 @@ export const useUserProfile = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isInitialized: dbInitialized } = useDatabase();
 
-  // Load initial data
+  // Load initial data only after database is initialized
   useEffect(() => {
-    loadUserData();
-  }, []);
+    if (dbInitialized) {
+      loadUserData();
+    }
+  }, [dbInitialized]);
 
   const loadUserData = async () => {
     try {
