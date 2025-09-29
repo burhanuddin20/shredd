@@ -227,6 +227,8 @@ export default function OnboardingScreen() {
         email: undefined, // No email collected in onboarding
         totalXP: 0,
         streak: 0,
+        currentPlan: selectedPlan,
+        createdAt: new Date().toISOString(),
         synced: false,
       });
 

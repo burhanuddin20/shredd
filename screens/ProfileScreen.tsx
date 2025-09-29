@@ -11,6 +11,7 @@ import {
     getRankName,
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
+import { useFasting } from '@/src/hooks/useFasting';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
@@ -90,35 +91,27 @@ export default function ProfileScreen() {
     const [showAllAchievements, setShowAllAchievements] = useState(false);
     const [showAllHistory, setShowAllHistory] = useState(false);
 
-    // Use database user or fallback to mock data
+    // Calculate real stats from database
+    const { fastHistory } = useFasting();
+    const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
+    const longestStreak = 0; // TODO: Calculate from fast history dates
+
+    // Use database user data only
     const user = userProfile ? {
         id: userProfile.id,
         username: userProfile.username,
         email: userProfile.email || '',
-        profilePicture: 'https://i.pravatar.cc/100',
         totalXP: userProfile.totalXP,
         currentStreak: userProfile.streak,
-        longestStreak: 12, // TODO: Calculate from fast history
-        totalFasts: 15, // TODO: Calculate from fast history
+        longestStreak,
+        totalFasts,
         achievements: achievements.map(a => a.id),
-        currentPlan: '16:8', // TODO: Get from user preferences
-        createdAt: new Date('2024-01-01'), // TODO: Add to user table
-    } : {
-        id: '1',
-        username: 'Guest',
-        email: '',
-        profilePicture: 'https://i.pravatar.cc/100',
-        totalXP: 0,
-        currentStreak: 0,
-        longestStreak: 0,
-        totalFasts: 0,
-        achievements: [],
-        currentPlan: '16:8',
-        createdAt: new Date(),
-    };
+        currentPlan: userProfile.currentPlan,
+        createdAt: new Date(userProfile.createdAt),
+    } : null;
 
-    const [previousXP] = useState(user.totalXP - 50); // Mock previous XP for animation
-    const userLevel = calculateLevel(user.totalXP);
+    const [previousXP] = useState((user?.totalXP || 0) - 50); // Mock previous XP for animation
+    const userLevel = calculateLevel(user?.totalXP || 0);
     const rankName = getRankName(userLevel.level);
 
     // Animation hooks
@@ -133,7 +126,7 @@ export default function ProfileScreen() {
         closeAchievement,
     } = useAnimations();
 
-    if (!fontsLoaded || !dbInitialized || isLoading) {
+    if (!fontsLoaded || !dbInitialized || isLoading || !userProfile || !user) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>

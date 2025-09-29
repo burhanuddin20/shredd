@@ -23,6 +23,8 @@ export interface UserProfile {
   email?: string;
   totalXP: number;
   streak: number;
+  currentPlan: string;
+  createdAt: string;
   synced: boolean;
 }
 
@@ -62,6 +64,8 @@ export const initDatabase = async (): Promise<void> => {
         email TEXT,
         totalXP INTEGER NOT NULL DEFAULT 0,
         streak INTEGER NOT NULL DEFAULT 0,
+        currentPlan TEXT NOT NULL DEFAULT '16:8',
+        createdAt TEXT NOT NULL,
         synced BOOLEAN NOT NULL DEFAULT 0
       );
     `);
@@ -101,7 +105,7 @@ export const getFasts = async (): Promise<Fast[]> => {
     'SELECT * FROM fasts ORDER BY startTime DESC'
   );
   
-  return result.map(row => ({
+  return result.map((row: any) => ({
     id: row.id as number,
     planId: row.planId as string,
     startTime: row.startTime as string,
@@ -122,13 +126,13 @@ export const getActiveFast = async (): Promise<Fast | null> => {
   if (!result) return null;
   
   return {
-    id: result.id as number,
-    planId: result.planId as string,
-    startTime: result.startTime as string,
-    endTime: result.endTime as string | undefined,
-    status: result.status as Fast['status'],
-    xpEarned: result.xpEarned as number,
-    synced: Boolean(result.synced),
+    id: (result as any).id as number,
+    planId: (result as any).planId as string,
+    startTime: (result as any).startTime as string,
+    endTime: (result as any).endTime as string | undefined,
+    status: (result as any).status as Fast['status'],
+    xpEarned: (result as any).xpEarned as number,
+    synced: Boolean((result as any).synced),
   };
 };
 
@@ -167,7 +171,7 @@ export const getAchievements = async (): Promise<Achievement[]> => {
     'SELECT * FROM achievements ORDER BY unlockedAt DESC'
   );
   
-  return result.map(row => ({
+  return result.map((row: any) => ({
     id: row.id as string,
     unlockedAt: row.unlockedAt as string,
     synced: Boolean(row.synced),
@@ -190,9 +194,9 @@ export const saveUser = async (user: UserProfile): Promise<void> => {
   const database = ensureDb();
   
   await database.runAsync(
-    `INSERT OR REPLACE INTO user (id, username, email, totalXP, streak, synced) 
-     VALUES (?, ?, ?, ?, ?, 0)`,
-    [user.id, user.username, user.email || null, user.totalXP, user.streak]
+    `INSERT OR REPLACE INTO user (id, username, email, totalXP, streak, currentPlan, createdAt, synced) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+    [user.id, user.username, user.email || null, user.totalXP, user.streak, user.currentPlan, user.createdAt]
   );
 };
 
@@ -204,12 +208,14 @@ export const getUser = async (): Promise<UserProfile | null> => {
   if (!result) return null;
   
   return {
-    id: result.id as string,
-    username: result.username as string,
-    email: result.email as string | undefined,
-    totalXP: result.totalXP as number,
-    streak: result.streak as number,
-    synced: Boolean(result.synced),
+    id: (result as any).id as string,
+    username: (result as any).username as string,
+    email: (result as any).email as string | undefined,
+    totalXP: (result as any).totalXP as number,
+    streak: (result as any).streak as number,
+    currentPlan: (result as any).currentPlan as string,
+    createdAt: (result as any).createdAt as string,
+    synced: Boolean((result as any).synced),
   };
 };
 
@@ -231,6 +237,42 @@ export const updateUserStreak = async (streak: number): Promise<void> => {
   );
 };
 
+export const updateUserProfile = async (updates: Partial<UserProfile>): Promise<void> => {
+  const database = ensureDb();
+  
+  const fields = [];
+  const values = [];
+  
+  if (updates.username !== undefined) {
+    fields.push('username = ?');
+    values.push(updates.username);
+  }
+  if (updates.email !== undefined) {
+    fields.push('email = ?');
+    values.push(updates.email);
+  }
+  if (updates.totalXP !== undefined) {
+    fields.push('totalXP = ?');
+    values.push(updates.totalXP);
+  }
+  if (updates.streak !== undefined) {
+    fields.push('streak = ?');
+    values.push(updates.streak);
+  }
+  if (updates.currentPlan !== undefined) {
+    fields.push('currentPlan = ?');
+    values.push(updates.currentPlan);
+  }
+  
+  if (fields.length > 0) {
+    fields.push('synced = 0');
+    await database.runAsync(
+      `UPDATE user SET ${fields.join(', ')}`,
+      values
+    );
+  }
+};
+
 // Utility functions for sync
 export const getUnsyncedFasts = async (): Promise<Fast[]> => {
   const database = ensureDb();
@@ -239,7 +281,7 @@ export const getUnsyncedFasts = async (): Promise<Fast[]> => {
     'SELECT * FROM fasts WHERE synced = 0 ORDER BY startTime DESC'
   );
   
-  return result.map(row => ({
+  return result.map((row: any) => ({
     id: row.id as number,
     planId: row.planId as string,
     startTime: row.startTime as string,
@@ -257,7 +299,7 @@ export const getUnsyncedAchievements = async (): Promise<Achievement[]> => {
     'SELECT * FROM achievements WHERE synced = 0 ORDER BY unlockedAt DESC'
   );
   
-  return result.map(row => ({
+  return result.map((row: any) => ({
     id: row.id as string,
     unlockedAt: row.unlockedAt as string,
     synced: Boolean(row.synced),
@@ -293,8 +335,8 @@ export const getDatabaseStats = async () => {
   const userCount = await database.getFirstAsync('SELECT COUNT(*) as count FROM user');
   
   return {
-    fasts: fastCount?.count as number || 0,
-    achievements: achievementCount?.count as number || 0,
-    users: userCount?.count as number || 0,
+    fasts: (fastCount as any)?.count as number || 0,
+    achievements: (achievementCount as any)?.count as number || 0,
+    users: (userCount as any)?.count as number || 0,
   };
 };

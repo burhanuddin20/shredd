@@ -19,6 +19,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Dimensions,
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
@@ -29,20 +30,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-// Mock user data (fallback)
-// const mockUser: UserProfile = {
-//     id: '1',
-//     username: 'trilly',
-//     email: 'scout@corps.com',
-//     profilePicture: 'https://i.pravatar.cc/100',
-//     totalXP: 250,
-//     currentStreak: 5,
-//     longestStreak: 12,
-//     totalFasts: 15,
-//     achievements: ['first_fast', 'fast_16h', 'total_10'],
-//     currentPlan: '16:8',
-//     createdAt: new Date('2024-01-01'),
-// };
 
 export default function HomeScreen() {
     // Load fonts
@@ -53,40 +40,33 @@ export default function HomeScreen() {
     // Database hooks
     const { isInitialized: dbInitialized } = useDatabase();
     const { currentFast, startFast, endFast, isLoading: fastingLoading } = useFasting();
-    const { userProfile, achievements, addXP, checkAndUnlockAchievements, isLoading: profileLoading } = useUserProfile();
+    const { userProfile, achievements, addXP, checkAndUnlockAchievements, updateUserProfile, isLoading: profileLoading } = useUserProfile();
 
     // Local timer state
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
-    const [selectedPlan] = useState('16:8');
+    const [selectedPlan, setSelectedPlan] = useState(userProfile?.currentPlan || '');
+    const [showPlanModal, setShowPlanModal] = useState(false);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Use database user or fallback to mock data
+    // Calculate real stats from database
+    const { fastHistory } = useFasting();
+    const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
+    const longestStreak = 0; // TODO: Calculate from fast history dates
+
+    // Use database user data only
     const user = userProfile ? {
         id: userProfile.id,
         username: userProfile.username,
         email: userProfile.email || '',
-        profilePicture: 'https://i.pravatar.cc/100',
         totalXP: userProfile.totalXP,
         currentStreak: userProfile.streak,
-        longestStreak: 12, // TODO: Calculate from fast history
-        totalFasts: 15, // TODO: Calculate from fast history
+        longestStreak,
+        totalFasts,
         achievements: achievements.map(a => a.id),
-        currentPlan: '16:8', // TODO: Get from user preferences
-        createdAt: new Date('2024-01-01'), // TODO: Add to user table
-    } : {
-        id: '1',
-        username: 'Guest',
-        email: '',
-        profilePicture: 'https://i.pravatar.cc/100',
-        totalXP: 0,
-        currentStreak: 0,
-        longestStreak: 0,
-        totalFasts: 0,
-        achievements: [],
-        currentPlan: '16:8',
-        createdAt: new Date(),
-    };
+        currentPlan: userProfile.currentPlan,
+        createdAt: new Date(userProfile.createdAt),
+    } : null;
 
     // Animation hooks
     const {
@@ -100,7 +80,7 @@ export default function HomeScreen() {
         closeAchievement,
     } = useAnimations();
 
-    const userLevel = calculateLevel(user.totalXP);
+    const userLevel = calculateLevel(user?.totalXP || 0);
     const rankName = getRankName(userLevel.level);
     const plan = FASTING_PLANS.find(
         (p) => p.id === (currentFast?.planId || selectedPlan)
@@ -190,7 +170,21 @@ export default function HomeScreen() {
         ]);
     };
 
-    if (!fontsLoaded || !dbInitialized || fastingLoading || profileLoading) {
+    const handlePlanSelect = async (planId: string) => {
+        try {
+            setSelectedPlan(planId);
+            setShowPlanModal(false);
+
+            // Update user profile in database
+            if (userProfile) {
+                await updateUserProfile({ currentPlan: planId });
+            }
+        } catch (error) {
+            console.error('Failed to update plan:', error);
+        }
+    };
+
+    if (!fontsLoaded || !dbInitialized || fastingLoading || profileLoading || !userProfile || !user) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
                 <View style={styles.loadingContainer}>
@@ -225,10 +219,10 @@ export default function HomeScreen() {
 
                     {/* Stats Row */}
                     <View style={styles.statsRow}>
-                        <View style={styles.statItem}>
+                        <TouchableOpacity style={styles.statItem} onPress={() => setShowPlanModal(true)}>
                             <Text style={styles.statLabel}>PLAN</Text>
-                            <Text style={styles.statValue}>{plan?.id || '16:8'}</Text>
-                        </View>
+                            <Text style={styles.statValue}>{selectedPlan || 'Select Plan'}</Text>
+                        </TouchableOpacity>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
                             <Text style={styles.statLabel}>XP</Text>
@@ -291,6 +285,52 @@ export default function HomeScreen() {
                         isUnlocked={achievementData.isUnlocked}
                     />
                 )}
+
+                {/* Plan Selection Modal */}
+                <Modal
+                    visible={showPlanModal}
+                    animationType="slide"
+                    presentationStyle="pageSheet"
+                >
+                    <SafeAreaView style={[styles.modalContainer, { backgroundColor: COLORS.background }]}>
+                        <View style={[styles.modalHeader, { backgroundColor: COLORS.surface }]}>
+                            <TouchableOpacity onPress={() => setShowPlanModal(false)}>
+                                <Text style={[styles.modalCancelText, { color: COLORS.accent }]}>Cancel</Text>
+                            </TouchableOpacity>
+                            <Text style={[styles.modalTitle, { color: COLORS.textPrimary }]}>Select Plan</Text>
+                            <View style={{ width: 60 }} />
+                        </View>
+
+                        <View style={styles.planList}>
+                            {FASTING_PLANS.map((plan) => (
+                                <TouchableOpacity
+                                    key={plan.id}
+                                    style={[
+                                        styles.planItem,
+                                        {
+                                            backgroundColor: COLORS.surface,
+                                            borderColor: selectedPlan === plan.id ? COLORS.accent : COLORS.border,
+                                            borderWidth: selectedPlan === plan.id ? 2 : 1,
+                                        }
+                                    ]}
+                                    onPress={() => handlePlanSelect(plan.id)}
+                                >
+                                    <View style={styles.planInfo}>
+                                        <Text style={[styles.planName, { color: COLORS.textPrimary }]}>
+                                            {plan.name}
+                                        </Text>
+                                        <Text style={[styles.planDescription, { color: COLORS.textSecondary }]}>
+                                            {plan.fastingHours}h fast, {plan.eatingHours}h eating
+                                        </Text>
+                                    </View>
+                                    {selectedPlan === plan.id && (
+                                        <View style={[styles.selectedIndicator, { backgroundColor: COLORS.accent }]} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </SafeAreaView>
+                </Modal>
             </ScrollView>
         </SafeAreaView>
     );
@@ -434,5 +474,56 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: FONTS.heading,
         fontWeight: 'bold',
+    },
+    modalContainer: {
+        flex: 1,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontFamily: FONTS.heading,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    modalCancelText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    planList: {
+        padding: 20,
+        gap: 12,
+    },
+    planItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        borderRadius: 12,
+    },
+    planInfo: {
+        flex: 1,
+    },
+    planName: {
+        fontSize: 16,
+        fontFamily: FONTS.heading,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    planDescription: {
+        fontSize: 14,
+        opacity: 0.8,
+    },
+    selectedIndicator: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginLeft: 12,
     },
 });

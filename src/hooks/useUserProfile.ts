@@ -1,12 +1,13 @@
 import {
-    Achievement,
-    getAchievements,
-    getUser,
-    hasAchievement,
-    unlockAchievement,
-    updateUserStreak,
-    updateUserXP,
-    UserProfile,
+  Achievement,
+  getAchievements,
+  getUser,
+  hasAchievement,
+  unlockAchievement,
+  updateUserProfile as updateUserProfileDb,
+  updateUserStreak,
+  updateUserXP,
+  UserProfile,
 } from '@/src/lib/db';
 import { useEffect, useState } from 'react';
 
@@ -110,12 +111,23 @@ export const useUserProfile = () => {
     }
   };
 
+  const updateUserProfile = async (updates: Partial<UserProfile>) => {
+    try {
+      await updateUserProfileDb(updates);
+      await loadUserData();
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  };
+
   return {
     userProfile,
     achievements,
     isLoading,
     addXP,
     updateStreak,
+    updateUserProfile,
     unlockAchievement: unlockUserAchievement,
     checkAndUnlockAchievements,
     refreshData: loadUserData,
