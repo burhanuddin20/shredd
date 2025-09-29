@@ -5,13 +5,14 @@ import { ProgressRing } from '@/components/shared/progress-ring';
 import { COLORS, FONTS, SIZES } from '@/components/shared/theme';
 import {
     calculateLevel,
-    Fast,
     FASTING_PLANS,
     getRankName,
     getXPReward,
-    UserProfile,
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
+import { useFasting } from '@/src/hooks/useFasting';
+import { useUserProfile } from '@/src/hooks/useUserProfile';
+import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -28,20 +29,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-// Mock user data
-const mockUser: UserProfile = {
-    id: '1',
-    username: 'trilly',
-    email: 'scout@corps.com',
-    profilePicture: 'https://i.pravatar.cc/100',
-    totalXP: 250,
-    currentStreak: 5,
-    longestStreak: 12,
-    totalFasts: 15,
-    achievements: ['first_fast', 'fast_16h', 'total_10'],
-    currentPlan: '16:8',
-    createdAt: new Date('2024-01-01'),
-};
+// Mock user data (fallback)
+// const mockUser: UserProfile = {
+//     id: '1',
+//     username: 'trilly',
+//     email: 'scout@corps.com',
+//     profilePicture: 'https://i.pravatar.cc/100',
+//     totalXP: 250,
+//     currentStreak: 5,
+//     longestStreak: 12,
+//     totalFasts: 15,
+//     achievements: ['first_fast', 'fast_16h', 'total_10'],
+//     currentPlan: '16:8',
+//     createdAt: new Date('2024-01-01'),
+// };
 
 export default function HomeScreen() {
     // Load fonts
@@ -49,15 +50,43 @@ export default function HomeScreen() {
         Anton_400Regular,
     });
 
-    // Timer state
-    const [currentFast, setCurrentFast] = useState<Fast | null>(null);
+    // Database hooks
+    const { isInitialized: dbInitialized } = useDatabase();
+    const { currentFast, startFast, endFast, isLoading: fastingLoading } = useFasting();
+    const { userProfile, achievements, addXP, checkAndUnlockAchievements, isLoading: profileLoading } = useUserProfile();
+
+    // Local timer state
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [selectedPlan] = useState('16:8');
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // User data
-    const [user] = useState<UserProfile>(mockUser);
+    // Use database user or fallback to mock data
+    const user = userProfile ? {
+        id: userProfile.id,
+        username: userProfile.username,
+        email: userProfile.email || '',
+        profilePicture: 'https://i.pravatar.cc/100',
+        totalXP: userProfile.totalXP,
+        currentStreak: userProfile.streak,
+        longestStreak: 12, // TODO: Calculate from fast history
+        totalFasts: 15, // TODO: Calculate from fast history
+        achievements: achievements.map(a => a.id),
+        currentPlan: '16:8', // TODO: Get from user preferences
+        createdAt: new Date('2024-01-01'), // TODO: Add to user table
+    } : {
+        id: '1',
+        username: 'Guest',
+        email: '',
+        profilePicture: 'https://i.pravatar.cc/100',
+        totalXP: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        totalFasts: 0,
+        achievements: [],
+        currentPlan: '16:8',
+        createdAt: new Date(),
+    };
 
     // Animation hooks
     const {
@@ -80,18 +109,27 @@ export default function HomeScreen() {
     const progress =
         totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
 
-    const completeFast = useCallback(() => {
+    const completeFast = useCallback(async () => {
         if (currentFast && plan) {
             const xpEarned = getXPReward(plan.fastingHours);
-            setCurrentFast(null);
-            setIsRunning(false);
-            setTimeRemaining(0);
 
-            Alert.alert('Fast Complete!', `You earned ${xpEarned} XP.`, [
-                { text: 'OK' },
-            ]);
+            try {
+                await endFast(currentFast.id!, xpEarned);
+                await addXP(xpEarned);
+                await checkAndUnlockAchievements(1, plan.fastingHours, 1);
+
+                setIsRunning(false);
+                setTimeRemaining(0);
+
+                Alert.alert('Fast Complete!', `You earned ${xpEarned} XP.`, [
+                    { text: 'OK' },
+                ]);
+            } catch (error) {
+                console.error('Failed to complete fast:', error);
+                Alert.alert('Error', 'Failed to complete fast. Please try again.');
+            }
         }
-    }, [currentFast, plan]);
+    }, [currentFast, plan, endFast, addXP, checkAndUnlockAchievements]);
 
     useEffect(() => {
         if (isRunning && timeRemaining > 0) {
@@ -112,43 +150,56 @@ export default function HomeScreen() {
         };
     }, [isRunning, timeRemaining, completeFast]);
 
-    const startFast = () => {
+    const startFastHandler = async () => {
         if (!plan) return;
-        const now = new Date();
-        const endTime = new Date(
-            now.getTime() + plan.fastingHours * 60 * 60 * 1000
-        );
 
-        const newFast: Fast = {
-            id: Date.now().toString(),
-            planId: selectedPlan,
-            startTime: now,
-            endTime,
-            status: 'in-progress',
-        };
+        try {
+            await startFast(selectedPlan);
+            setTimeRemaining(plan.fastingHours * 60 * 60);
+            setIsRunning(true);
 
-        setCurrentFast(newFast);
-        setTimeRemaining(plan.fastingHours * 60 * 60);
-        setIsRunning(true);
+            Alert.alert(
+                'Fast Started!',
+                `Your ${plan.name} fast has begun. Good luck, soldier!`,
+                [{ text: 'Let\'s Go!', style: 'default' }]
+            );
+        } catch (error) {
+            console.error('Failed to start fast:', error);
+            Alert.alert('Error', 'Failed to start fast. Please try again.');
+        }
     };
 
-    const endFast = () => {
-        Alert.alert('End Fast', 'Are you sure?', [
+    const endFastHandler = () => {
+        Alert.alert('End Fast', 'Are you sure you want to end your current fast? You will not receive XP.', [
             { text: 'Cancel', style: 'cancel' },
             {
                 text: 'End Fast',
                 style: 'destructive',
-                onPress: () => {
-                    setCurrentFast(null);
-                    setIsRunning(false);
-                    setTimeRemaining(0);
+                onPress: async () => {
+                    if (currentFast) {
+                        try {
+                            await endFast(currentFast.id!, 0);
+                            setIsRunning(false);
+                            setTimeRemaining(0);
+                        } catch (error) {
+                            console.error('Failed to end fast:', error);
+                        }
+                    }
                 },
             },
         ]);
     };
 
-    if (!fontsLoaded) {
-        return null;
+    if (!fontsLoaded || !dbInitialized || fastingLoading || profileLoading) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
+                <View style={styles.loadingContainer}>
+                    <Text style={[styles.loadingText, { color: COLORS.textPrimary }]}>
+                        Loading...
+                    </Text>
+                </View>
+            </SafeAreaView>
+        );
     }
 
     return (
@@ -200,7 +251,7 @@ export default function HomeScreen() {
                 {/* Action Button */}
                 <TouchableOpacity
                     style={styles.actionButton}
-                    onPress={currentFast ? endFast : startFast}
+                    onPress={currentFast ? endFastHandler : startFastHandler}
                 >
                     <Text style={styles.actionButtonText}>
                         {currentFast ? 'END FAST' : 'START FAST'}
@@ -373,5 +424,15 @@ const styles = StyleSheet.create({
         color: COLORS.buttonText,
         textTransform: 'uppercase',
         letterSpacing: 1,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        fontSize: 18,
+        fontFamily: FONTS.heading,
+        fontWeight: 'bold',
     },
 });

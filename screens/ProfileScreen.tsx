@@ -9,9 +9,10 @@ import {
     ACHIEVEMENTS,
     calculateLevel,
     getRankName,
-    UserProfile,
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
+import { useUserProfile } from '@/src/hooks/useUserProfile';
+import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -24,20 +25,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Mock user data
-const mockUser: UserProfile = {
-    id: '1',
-    username: 'trilly',
-    email: 'scout@corps.com',
-    profilePicture: 'https://i.pravatar.cc/100',
-    totalXP: 100,
-    currentStreak: 5,
-    longestStreak: 12,
-    totalFasts: 15,
-    achievements: ['first_fast', 'fast_16h', 'total_10'],
-    currentPlan: '16:8',
-    createdAt: new Date('2024-01-01'),
-};
+// Mock user data (fallback)
+// const mockUser: UserProfile = {
+//     id: '1',
+//     username: 'trilly',
+//     email: 'scout@corps.com',
+//     profilePicture: 'https://i.pravatar.cc/100',
+//     totalXP: 100,
+//     currentStreak: 5,
+//     longestStreak: 12,
+//     totalFasts: 15,
+//     achievements: ['first_fast', 'fast_16h', 'total_10'],
+//     currentPlan: '16:8',
+//     createdAt: new Date('2024-01-01'),
+// };
 
 // Mock fast history data
 const mockFastHistory = [
@@ -83,10 +84,40 @@ export default function ProfileScreen() {
         Anton_400Regular,
     });
 
-    const [user] = useState<UserProfile>(mockUser);
-    const [previousXP] = useState(user.totalXP - 50); // Mock previous XP for animation
+    const { isInitialized: dbInitialized } = useDatabase();
+    const { userProfile, achievements, isLoading } = useUserProfile();
+
     const [showAllAchievements, setShowAllAchievements] = useState(false);
     const [showAllHistory, setShowAllHistory] = useState(false);
+
+    // Use database user or fallback to mock data
+    const user = userProfile ? {
+        id: userProfile.id,
+        username: userProfile.username,
+        email: userProfile.email || '',
+        profilePicture: 'https://i.pravatar.cc/100',
+        totalXP: userProfile.totalXP,
+        currentStreak: userProfile.streak,
+        longestStreak: 12, // TODO: Calculate from fast history
+        totalFasts: 15, // TODO: Calculate from fast history
+        achievements: achievements.map(a => a.id),
+        currentPlan: '16:8', // TODO: Get from user preferences
+        createdAt: new Date('2024-01-01'), // TODO: Add to user table
+    } : {
+        id: '1',
+        username: 'Guest',
+        email: '',
+        profilePicture: 'https://i.pravatar.cc/100',
+        totalXP: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        totalFasts: 0,
+        achievements: [],
+        currentPlan: '16:8',
+        createdAt: new Date(),
+    };
+
+    const [previousXP] = useState(user.totalXP - 50); // Mock previous XP for animation
     const userLevel = calculateLevel(user.totalXP);
     const rankName = getRankName(userLevel.level);
 
@@ -102,8 +133,14 @@ export default function ProfileScreen() {
         closeAchievement,
     } = useAnimations();
 
-    if (!fontsLoaded) {
-        return null;
+    if (!fontsLoaded || !dbInitialized || isLoading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>Loading profile...</Text>
+                </View>
+            </SafeAreaView>
+        );
     }
 
     return (
@@ -462,5 +499,17 @@ const styles = StyleSheet.create({
         right: 16,
         height: 1,
         backgroundColor: COLORS.border,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: COLORS.background,
+    },
+    loadingText: {
+        fontSize: 18,
+        fontFamily: FONTS.heading,
+        color: COLORS.textPrimary,
+        fontWeight: 'bold',
     },
 });

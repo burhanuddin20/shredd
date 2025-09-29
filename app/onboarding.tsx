@@ -4,6 +4,7 @@ import { MilitaryButton } from '@/components/ui/military-button';
 import { FASTING_PLANS } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { saveUser } from '@/src/lib/db';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -214,18 +215,34 @@ export default function OnboardingScreen() {
   // };
 
   // Temporary placeholder function for subscription
-  const handleStartFreeTrial = () => {
-    // Haptic feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const handleStartFreeTrial = async () => {
+    try {
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Log user data
-    console.log('User:', userName, 'Plan:', selectedPlan);
+      // Save user data to SQLite
+      await saveUser({
+        id: `user_${Date.now()}`, // Generate unique user ID
+        username: userName.trim(),
+        email: undefined, // No email collected in onboarding
+        totalXP: 0,
+        streak: 0,
+        synced: false,
+      });
 
-    // Success haptic
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Log user data
+      console.log('User saved to database:', userName, 'Plan:', selectedPlan);
 
-    // Navigate to main app (bypassing subscription for now)
-    router.replace('/(tabs)');
+      // Success haptic
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Navigate to main app (bypassing subscription for now)
+      router.replace('/(tabs)');
+    } catch (error) {
+      console.error('Failed to save user data:', error);
+      // Still navigate even if save fails
+      router.replace('/(tabs)');
+    }
   };
 
   // Legacy function - keeping for potential future use

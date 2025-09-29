@@ -1,19 +1,21 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fast, FASTING_PLANS, getXPReward } from '@/constants/game';
+import { FASTING_PLANS, getXPReward } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFasting } from '@/src/hooks/useFasting';
+import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { Stack } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    FlatList,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -66,11 +68,24 @@ const MOCK_FASTS: Fast[] = [
 export default function HistoryScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
-  const [fasts, setFasts] = useState<Fast[]>(MOCK_FASTS);
+  const { isInitialized: dbInitialized } = useDatabase();
+  const { fastHistory, isLoading } = useFasting();
+
   const [selectedFast, setSelectedFast] = useState<Fast | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
+
+  // Convert database fasts to display format
+  const fasts = fastHistory.map(fast => ({
+    ...fast,
+    id: fast.id!.toString(),
+    startTime: new Date(fast.startTime),
+    endTime: fast.endTime ? new Date(fast.endTime) : undefined,
+    actualEndTime: fast.endTime ? new Date(fast.endTime) : undefined,
+    status: fast.status as 'completed' | 'cancelled' | 'in-progress',
+    achievements: [], // TODO: Get achievements for each fast
+  }));
 
   const getPlanName = (planId: string): string => {
     const plan = FASTING_PLANS.find(p => p.id === planId);
@@ -194,10 +209,10 @@ export default function HistoryScreen() {
             </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <IconSymbol 
-              name={getStatusIcon(item.status)} 
-              size={12} 
-              color={colors.primary} 
+            <IconSymbol
+              name={getStatusIcon(item.status)}
+              size={12}
+              color={colors.primary}
             />
             <Text style={[styles.statusText, { color: colors.primary }]}>
               {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
@@ -213,7 +228,7 @@ export default function HistoryScreen() {
               {formatTime(item.startTime)}
             </Text>
           </View>
-          
+
           <View style={styles.timeRow}>
             <IconSymbol name="clock.badge.checkmark.fill" size={16} color={colors.icon} />
             <Text style={[styles.timeLabel, { color: colors.icon }]}>End:</Text>
@@ -221,7 +236,7 @@ export default function HistoryScreen() {
               {formatTime(item.actualEndTime || item.endTime || new Date())}
             </Text>
           </View>
-          
+
           <View style={styles.timeRow}>
             <IconSymbol name="timer" size={16} color={colors.icon} />
             <Text style={[styles.timeLabel, { color: colors.icon }]}>Duration:</Text>
@@ -248,7 +263,7 @@ export default function HistoryScreen() {
             <IconSymbol name="pencil" size={16} color={colors.primary} />
             <Text style={[styles.actionButtonText, { color: colors.primary }]}>Edit</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: colors.danger }]}
             onPress={() => deleteFast(item.id)}
@@ -261,16 +276,35 @@ export default function HistoryScreen() {
     );
   };
 
+  if (!dbInitialized || isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <Stack.Screen
+          options={{
+            title: 'Fast History',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            Loading history...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Fast History',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
-        }} 
+        }}
       />
-      
+
       {fasts.length === 0 ? (
         <View style={styles.emptyState}>
           <IconSymbol name="clock" size={64} color={colors.icon} />
@@ -485,6 +519,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
