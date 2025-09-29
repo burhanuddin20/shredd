@@ -6,10 +6,6 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DatabaseProvider } from '@/src/lib/DatabaseProvider';
 
-export const unstable_settings = {
-  anchor: 'onboarding',
-};
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
@@ -17,6 +13,7 @@ export default function RootLayout() {
     <DatabaseProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
