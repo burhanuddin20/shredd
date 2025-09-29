@@ -69,8 +69,6 @@ export const initDatabase = async (): Promise<void> => {
         synced BOOLEAN NOT NULL DEFAULT 0
       );
     `);
-
-    console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization failed:', error);
     throw error;
