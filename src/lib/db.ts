@@ -237,10 +237,10 @@ export const updateUserStreak = async (streak: number): Promise<void> => {
 
 export const updateUserProfile = async (updates: Partial<UserProfile>): Promise<void> => {
   const database = ensureDb();
-  
+
   const fields = [];
   const values = [];
-  
+
   if (updates.username !== undefined) {
     fields.push('username = ?');
     values.push(updates.username);
@@ -261,13 +261,28 @@ export const updateUserProfile = async (updates: Partial<UserProfile>): Promise<
     fields.push('currentPlan = ?');
     values.push(updates.currentPlan);
   }
-  
+
   if (fields.length > 0) {
     fields.push('synced = 0');
     await database.runAsync(
       `UPDATE user SET ${fields.join(', ')}`,
       values
     );
+  }
+};
+
+// Clear all data from the database (useful for testing)
+export const clearAllData = async (): Promise<void> => {
+  const database = ensureDb();
+  
+  try {
+    await database.runAsync('DELETE FROM achievements');
+    await database.runAsync('DELETE FROM fasts');
+    await database.runAsync('DELETE FROM user');
+    console.log('All data cleared from database');
+  } catch (error) {
+    console.error('Failed to clear database:', error);
+    throw error;
   }
 };
 
@@ -313,16 +328,6 @@ export const markAsSynced = async (table: 'fasts' | 'achievements' | 'user', id:
   );
 };
 
-// Clear all data (useful for testing)
-export const clearAllData = async (): Promise<void> => {
-  const database = ensureDb();
-  
-  await database.execAsync(`
-    DELETE FROM fasts;
-    DELETE FROM achievements;
-    DELETE FROM user;
-  `);
-};
 
 // Get database stats
 export const getDatabaseStats = async () => {

@@ -13,6 +13,7 @@ import { useAnimations } from '@/hooks/use-animations';
 import { useFasting } from '@/src/hooks/useFasting';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
+import { clearAllData } from '@/src/lib/db';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -183,6 +184,31 @@ export default function HomeScreen() {
         }
     };
 
+    // Reset database for testing (temporary function)
+    const handleResetDatabase = async () => {
+        Alert.alert(
+            'Reset Database',
+            'This will clear all user data and return you to onboarding. Are you sure?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Reset',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await clearAllData();
+                            // Force reload by restarting the app
+                            Alert.alert('Success', 'Database cleared. Please restart the app to see onboarding.');
+                        } catch (error) {
+                            console.error('Failed to clear database:', error);
+                            Alert.alert('Error', 'Failed to clear database');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     if (!fontsLoaded || !dbInitialized || fastingLoading || profileLoading || !userProfile || !user) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: COLORS.background }]}>
@@ -257,6 +283,13 @@ export default function HomeScreen() {
                     onTriggerAchievement={triggerAchievementUnlock}
                 />
 
+                {/* Reset Database Button - Remove this in production */}
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: COLORS.accent, marginTop: 20 }]}
+                    onPress={handleResetDatabase}
+                >
+                    <Text style={styles.actionButtonText}>RESET DATABASE (TEST)</Text>
+                </TouchableOpacity>
 
                 {/* Animation Modals */}
                 {levelUpVisible && levelUpData && (
