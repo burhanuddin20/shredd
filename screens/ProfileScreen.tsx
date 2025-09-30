@@ -15,8 +15,8 @@ import { useFasting } from '@/src/hooks/useFasting';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
-import { router } from 'expo-router';
-import React, { memo, useMemo, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -47,8 +47,16 @@ const ProfileScreen = memo(function ProfileScreen() {
     const [showAllHistory, setShowAllHistory] = useState(false);
 
     // Calculate real stats from database
-    const { fastHistory, isLoading: fastHistoryLoading } = useFasting();
+    const { fastHistory, isLoading: fastHistoryLoading, refreshData } = useFasting();
     const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
+
+    // Refresh fast history when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            console.log('ProfileScreen - Screen focused, refreshing data');
+            refreshData();
+        }, [refreshData])
+    );
 
     // Debug logging (only log when data actually changes)
     const prevFastHistoryLength = React.useRef(fastHistory.length);
@@ -233,7 +241,7 @@ const ProfileScreen = memo(function ProfileScreen() {
                 <View style={styles.recordsSection}>
                     <View style={styles.recordsRow}>
                         <View style={styles.recordCard}>
-                            <Text style={styles.recordValue}>{user.totalFasts}</Text>
+                            <Text style={styles.recordValue}>{totalFasts}</Text>
                             <Text style={styles.recordLabel}>TOTAL FASTS</Text>
                         </View>
                         <View style={styles.recordCard}>

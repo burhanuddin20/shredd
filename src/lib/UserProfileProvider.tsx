@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useDatabase } from './DatabaseProvider';
-import { Achievement, getAchievements, getUser, updateUserStreak, updateUserXP, UserProfile } from './db';
+import { Achievement, getAchievements, getUser, hasAchievement, unlockAchievement as unlockAchievementDb, updateUserStreak, updateUserXP, UserProfile } from './db';
 
 interface UserProfileContextType {
     userProfile: UserProfile | null;
@@ -97,7 +97,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
 
     const unlockAchievement = async (achievementId: string): Promise<void> => {
         try {
-            await unlockAchievement(achievementId);
+            await unlockAchievementDb(achievementId);
             await loadUserData();
         } catch (error) {
             console.error('Failed to unlock achievement:', error);
@@ -116,9 +116,88 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     };
 
     const checkAndUnlockAchievements = async (totalFasts: number, fastingHours: number, streak: number): Promise<void> => {
-        // This would contain the achievement logic
-        // For now, just a placeholder
         console.log('Checking achievements for:', { totalFasts, fastingHours, streak });
+
+        // Check first fast achievement
+        if (totalFasts === 1) {
+            const hasFirstFast = await hasAchievement('first_fast');
+            if (!hasFirstFast) {
+                console.log('Unlocking achievement: first_fast');
+                await unlockAchievementDb('first_fast');
+                await loadUserData(); // Reload to update achievements
+            } else {
+                console.log('Achievement already unlocked: first_fast');
+            }
+        }
+
+        // Check fasting duration achievements
+        const durationAchievements = [
+            { hours: 12, id: 'fast_12h' },
+            { hours: 16, id: 'fast_16h' },
+            { hours: 18, id: 'fast_18h' },
+            { hours: 20, id: 'fast_20h' },
+            { hours: 24, id: 'fast_24h' },
+        ];
+
+        for (const achievement of durationAchievements) {
+            if (fastingHours >= achievement.hours) {
+                const hasAchievementUnlocked = await hasAchievement(achievement.id);
+                if (!hasAchievementUnlocked) {
+                    console.log(`Unlocking achievement: ${achievement.id}`);
+                    await unlockAchievementDb(achievement.id);
+                    await loadUserData();
+                } else {
+                    console.log(`Achievement already unlocked: ${achievement.id}`);
+                }
+            }
+        }
+
+        // Check streak achievements
+        const streakAchievements = [
+            { days: 7, id: 'streak_7d' },
+            { days: 14, id: 'streak_14d' },
+            { days: 30, id: 'streak_30d' },
+            { days: 60, id: 'streak_60d' },
+            { days: 90, id: 'streak_90d' },
+            { days: 180, id: 'streak_180d' },
+            { days: 365, id: 'streak_365d' },
+        ];
+
+        for (const achievement of streakAchievements) {
+            if (streak >= achievement.days) {
+                const hasAchievementUnlocked = await hasAchievement(achievement.id);
+                if (!hasAchievementUnlocked) {
+                    console.log(`Unlocking achievement: ${achievement.id}`);
+                    await unlockAchievementDb(achievement.id);
+                    await loadUserData();
+                } else {
+                    console.log(`Achievement already unlocked: ${achievement.id}`);
+                }
+            }
+        }
+
+        // Check total fasts achievements
+        const totalFastsAchievements = [
+            { count: 5, id: 'total_5' },
+            { count: 10, id: 'total_10' },
+            { count: 20, id: 'total_20' },
+            { count: 50, id: 'total_50' },
+            { count: 100, id: 'total_100' },
+            { count: 200, id: 'total_200' },
+        ];
+
+        for (const achievement of totalFastsAchievements) {
+            if (totalFasts >= achievement.count) {
+                const hasAchievementUnlocked = await hasAchievement(achievement.id);
+                if (!hasAchievementUnlocked) {
+                    console.log(`Unlocking achievement: ${achievement.id}`);
+                    await unlockAchievementDb(achievement.id);
+                    await loadUserData();
+                } else {
+                    console.log(`Achievement already unlocked: ${achievement.id}`);
+                }
+            }
+        }
     };
 
     const refreshUserData = async (): Promise<void> => {

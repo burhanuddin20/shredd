@@ -14,7 +14,7 @@ export const COLORS = {
   warning: '#DAA520', // military gold
   surface: '#111111', // card backgrounds
   // Achievement colors
-  bronze: '#CD7F32', // Bronze
+  bronze: '#774410F3', // Bronze
   silver: '#C0C0C0', // Silver
   gold: '#DAA520', // Gold
 };

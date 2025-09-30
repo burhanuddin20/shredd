@@ -12,7 +12,7 @@ import {
 import { useAnimations } from '@/hooks/use-animations';
 import { useFasting } from '@/src/hooks/useFasting';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
-import { clearAllData } from '@/src/lib/db';
+import { clearAllData, getCompletedFastsCount } from '@/src/lib/db';
 import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -103,7 +103,11 @@ export default function HomeScreen() {
             try {
                 await endFast(currentFast.id!, xpEarned);
                 await addXP(xpEarned);
-                await checkAndUnlockAchievements(1, plan.fastingHours, 1);
+
+                // Get the actual count from database after ending the fast
+                const completedCount = await getCompletedFastsCount();
+                console.log('HomeScreen - Completed fasts count from DB:', completedCount);
+                await checkAndUnlockAchievements(completedCount, plan.fastingHours, user?.currentStreak || 0);
 
                 setIsRunning(false);
                 setTimeRemaining(0);
@@ -116,7 +120,7 @@ export default function HomeScreen() {
                 Alert.alert('Error', 'Failed to complete fast. Please try again.');
             }
         }
-    }, [currentFast, plan, endFast, addXP, checkAndUnlockAchievements]);
+    }, [currentFast, plan, endFast, addXP, checkAndUnlockAchievements, user?.currentStreak]);
 
     useEffect(() => {
         if (isRunning && timeRemaining > 0) {
@@ -145,10 +149,11 @@ export default function HomeScreen() {
             setTimeRemaining(plan.fastingHours * 60 * 60);
             setIsRunning(true);
 
-            // Check for first fast achievement
-            const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
-            if (totalFasts === 0) {
-                await checkAndUnlockAchievements(1, plan.fastingHours, user?.currentStreak || 0);
+            // Check for first fast achievement (when starting, the count is still 0)
+            const completedCount = await getCompletedFastsCount();
+            if (completedCount === 0) {
+                console.log('HomeScreen - Starting first fast, will check achievements after completion');
+                // Don't check achievements here, will check after completion
             }
 
             Alert.alert(
@@ -177,6 +182,11 @@ export default function HomeScreen() {
 
                             await endFast(currentFast.id!, xpEarned);
                             await addXP(xpEarned);
+
+                            // Get the actual count from database after ending the fast
+                            const completedCount = await getCompletedFastsCount();
+                            console.log('HomeScreen - Completed fasts count from DB:', completedCount);
+                            await checkAndUnlockAchievements(completedCount, plan.fastingHours, user?.currentStreak || 0);
 
                             setIsRunning(false);
                             setTimeRemaining(0);

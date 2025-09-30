@@ -134,6 +134,16 @@ export const getActiveFast = async (): Promise<Fast | null> => {
   };
 };
 
+export const getCompletedFastsCount = async (): Promise<number> => {
+  const database = ensureDb();
+  
+  const result = await database.getFirstAsync(
+    "SELECT COUNT(*) as count FROM fasts WHERE status = 'completed'"
+  );
+  
+  return (result as any)?.count || 0;
+};
+
 export const updateFastStatus = async (id: number, status: Fast['status'], endTime?: string): Promise<void> => {
   const database = ensureDb();
   

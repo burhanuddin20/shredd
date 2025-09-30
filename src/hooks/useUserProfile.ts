@@ -105,6 +105,7 @@ export const useUserProfile = () => {
       { id: 'streak_7d', condition: currentStreak >= 7 },
       { id: 'streak_14d', condition: currentStreak >= 14 },
       { id: 'streak_30d', condition: currentStreak >= 30 },
+      { id: 'total_5', condition: totalFasts >= 5 },
       { id: 'total_10', condition: totalFasts >= 10 },
       { id: 'total_20', condition: totalFasts >= 20 },
       { id: 'total_50', condition: totalFasts >= 50 },

@@ -12,13 +12,14 @@ const getAchievementColor = (achievementId: string, isUnlocked: boolean) => {
     if (!isUnlocked) return COLORS.border;
 
     // Easy achievements (bronze)
-    const easyAchievements = ['first_fast', 'fast_12h', 'total_10'];
+    const easyAchievements = ['first_fast', 'fast_12h', 'total_5'];
     if (easyAchievements.includes(achievementId)) return COLORS.bronze;
 
     // Medium achievements (silver)
     const mediumAchievements = [
         'fast_16h',
         'fast_18h',
+        'total_10',
         'total_20',
         'total_50',
         'streak_7',

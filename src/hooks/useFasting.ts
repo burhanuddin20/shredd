@@ -9,7 +9,7 @@ import {
     updateFastXP,
     type Fast as FastType
 } from '@/src/lib/db';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const useFasting = () => {
   const [currentFast, setCurrentFast] = useState<FastType | null>(null);
@@ -17,14 +17,7 @@ export const useFasting = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { isInitialized: dbInitialized } = useDatabase();
 
-  // Load initial data only after database is initialized
-  useEffect(() => {
-    if (dbInitialized) {
-      loadFastData();
-    }
-  }, [dbInitialized]);
-
-  const loadFastData = async () => {
+  const loadFastData = useCallback(async () => {
     try {
       setIsLoading(true);
       const [activeFast, allFasts] = await Promise.all([
@@ -34,9 +27,7 @@ export const useFasting = () => {
       
       // Only log when data actually changes
       const completedFasts = allFasts.filter(f => f.status === 'completed').length;
-      if (allFasts.length !== fastHistory.length || completedFasts !== fastHistory.filter(f => f.status === 'completed').length) {
-        console.log('useFasting - Data updated - Total fasts:', allFasts.length, 'Completed:', completedFasts);
-      }
+      console.log('useFasting - Data updated - Total fasts:', allFasts.length, 'Completed:', completedFasts);
       
       setCurrentFast(activeFast);
       setFastHistory(allFasts);
@@ -45,7 +36,14 @@ export const useFasting = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Load initial data only after database is initialized
+  useEffect(() => {
+    if (dbInitialized) {
+      loadFastData();
+    }
+  }, [dbInitialized, loadFastData]);
 
   const startFast = async (planId: string): Promise<number> => {
     try {

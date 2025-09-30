@@ -47,6 +47,7 @@ export const ACHIEVEMENTS = [
   { id: 'streak_90d', name: '90 Day Streak', description: 'Fast for 90 consecutive days', xpReward: 2000 },
   { id: 'streak_180d', name: '180 Day Streak', description: 'Fast for 180 consecutive days', xpReward: 3000 },
   { id: 'streak_365d', name: '365 Day Streak', description: 'Fast for 365 consecutive days', xpReward: 5000 },
+  { id: 'total_5', name: '5 Fast Veteran', description: 'Complete 5 fasts', xpReward: 200 },
   { id: 'total_10', name: '10 Fast Veteran', description: 'Complete 10 fasts', xpReward: 200 },
   { id: 'total_20', name: '20 Fast Elite', description: 'Complete 20 fasts', xpReward: 400 },
   { id: 'total_50', name: '50 Fast Master', description: 'Complete 50 fasts', xpReward: 750 },
