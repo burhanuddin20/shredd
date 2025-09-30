@@ -17,11 +17,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import {
-  GestureHandlerRootView,
-  PanGestureHandler,
-  PanGestureHandlerGestureEvent
-} from 'react-native-gesture-handler';
 // import Purchases from 'react-native-purchases';
 import Animated, {
   useAnimatedStyle,
@@ -431,205 +426,212 @@ export default function OnboardingScreen() {
     }
   };
 
-  // Swipe gesture handler
-  const handleSwipeGesture = (event: PanGestureHandlerGestureEvent) => {
-    const { translationX, velocityX } = event.nativeEvent;
-
-    // Swipe right (go back) - minimum distance and velocity
-    if (translationX > 50 && velocityX > 300 && currentStep > 0) {
-      prevStep();
-    }
-
-    // Swipe left (go forward) - minimum distance and velocity
-    // Allow swipe forward on all steps except the final name step
-    if (translationX < -50 && velocityX < -300 && currentStep < onboardingSteps.length - 1) {
-      nextStep();
-    }
-  };
 
 
   const currentStepData = onboardingSteps[currentStep];
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <PanGestureHandler onGestureEvent={handleSwipeGesture}>
-          <ScrollView contentContainerStyle={styles.scrollContent}>
-            {/* Hero Section for first step */}
-            {currentStep === 0 && (
-              <View style={styles.heroSection}>
-                <View style={styles.warriorSilhouette}>
-                  <IconSymbol name="figure.walk" size={120} color={colors.accent} />
-                  <View style={[styles.cloak, { backgroundColor: colors.accent + '40' }]} />
-                </View>
-                <Text style={[styles.heroText, { color: colors.beige }]}>
-                  START YOUR TRAINING
-                </Text>
-              </View>
-            )}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.tapAreas}>
+        {/* Left tap area for going back */}
+        <TouchableOpacity
+          style={styles.leftTapArea}
+          onPress={prevStep}
+          disabled={currentStep === 0}
+        />
 
-            {/* Progress Indicator */}
-            <View style={styles.progressContainer}>
-              {onboardingSteps.map((_, index) => (
-                <View
-                  key={index}
+        {/* Right tap area for going forward */}
+        <TouchableOpacity
+          style={styles.rightTapArea}
+          onPress={() => {
+            // Only allow forward navigation if conditions are met
+            if (currentStep === 5 && !selectedPlan) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', 'Please select a fasting plan');
+            } else if (currentStep === onboardingSteps.length - 1 && !userName.trim()) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Error', 'Please enter a valid name');
+            } else {
+              nextStep();
+            }
+          }}
+        />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Hero Section for first step */}
+        {currentStep === 0 && (
+          <View style={styles.heroSection}>
+            <View style={styles.warriorSilhouette}>
+              <IconSymbol name="figure.walk" size={120} color={colors.accent} />
+              <View style={[styles.cloak, { backgroundColor: colors.accent + '40' }]} />
+            </View>
+            <Text style={[styles.heroText, { color: colors.beige }]}>
+              START YOUR TRAINING
+            </Text>
+          </View>
+        )}
+
+        {/* Progress Indicator */}
+        <View style={styles.progressContainer}>
+          {onboardingSteps.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.progressDot,
+                {
+                  backgroundColor: index <= currentStep ? colors.accent : colors.border,
+                },
+              ]}
+            />
+          ))}
+        </View>
+
+        {/* Content */}
+        <View style={styles.content}>
+          {currentStep !== 0 && currentStep !== 5 && currentStep !== 6 && (
+            <View style={styles.iconContainer}>
+              <IconSymbol
+                name={currentStepData.icon as any}
+                size={80}
+                color={currentStepData.color}
+              />
+            </View>
+          )}
+          {(currentStep === 5 || currentStep === 6) && (
+            <View style={styles.smallIconContainer}>
+              <IconSymbol
+                name={currentStepData.icon as any}
+                size={40}
+                color={currentStepData.color}
+              />
+            </View>
+          )}
+
+          <Text style={[styles.title, { color: colors.beige }]}>
+            {currentStepData.title}
+          </Text>
+
+          <Text style={[
+            (currentStep === 5 || currentStep === 6) ? styles.subtitleCompact : styles.subtitle,
+            { color: colors.accent }
+          ]}>
+            {currentStepData.subtitle}
+          </Text>
+
+          {currentStepData.description && (
+            <Text style={[styles.description, { color: colors.beige }]}>
+              {currentStepData.description}
+            </Text>
+          )}
+
+          {/* Special content for plan selection */}
+          {currentStep === 5 && (
+            <View style={styles.plansContainer}>
+              <Text style={{ color: 'white', fontSize: 16, marginBottom: 10 }}>
+              </Text>
+              {FASTING_PLANS.map((plan) => (
+                <TouchableOpacity
+                  key={plan.id}
+                  onPress={() => setSelectedPlan(plan.id)}
                   style={[
-                    styles.progressDot,
-                    {
-                      backgroundColor: index <= currentStep ? colors.accent : colors.border,
-                    },
+                    styles.planCard,
+                    selectedPlan === plan.id && styles.selectedPlanCard,
+                    { borderColor: selectedPlan === plan.id ? colors.accent : colors.border }
                   ]}
-                />
+                >
+                  <View style={styles.planCardContent}>
+                    <View style={styles.planInfo}>
+                      <Text style={[styles.planName, { color: colors.beige }]}>{plan.name}</Text>
+                      <Text style={[styles.planDescription, { color: colors.beige }]}>
+                        {plan.fastingHours}h fast / {24 - plan.fastingHours}h eating
+                      </Text>
+                      <Text style={[styles.planDifficulty, { color: colors.accent }]}>
+                        {plan.difficulty}
+                      </Text>
+                    </View>
+                    {selectedPlan === plan.id && (
+                      <IconSymbol name="checkmark.circle.fill" size={24} color={colors.accent} />
+                    )}
+                  </View>
+                </TouchableOpacity>
               ))}
             </View>
+          )}
 
-            {/* Content */}
-            <View style={styles.content}>
-              {currentStep !== 0 && currentStep !== 5 && currentStep !== 6 && (
-                <View style={styles.iconContainer}>
-                  <IconSymbol
-                    name={currentStepData.icon as any}
-                    size={80}
-                    color={currentStepData.color}
-                  />
-                </View>
-              )}
-              {(currentStep === 5 || currentStep === 6) && (
-                <View style={styles.smallIconContainer}>
-                  <IconSymbol
-                    name={currentStepData.icon as any}
-                    size={40}
-                    color={currentStepData.color}
-                  />
-                </View>
-              )}
-
-              <Text style={[styles.title, { color: colors.beige }]}>
-                {currentStepData.title}
+          {/* Special content for name input */}
+          {currentStep === 6 && (
+            <View style={styles.nameFormContainer}>
+              <Text style={[styles.nameFormLabel, { color: colors.beige }]}>
+                Enter your soldier name:
               </Text>
-
-              <Text style={[
-                (currentStep === 5 || currentStep === 6) ? styles.subtitleCompact : styles.subtitle,
-                { color: colors.accent }
-              ]}>
-                {currentStepData.subtitle}
+              <TextInput
+                style={[styles.nameInput, {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.beige
+                }]}
+                value={userName}
+                onChangeText={(text) => {
+                  // Limit input to 10 characters and sanitize in real-time
+                  const sanitized = text
+                    .replace(/[<>'"&]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .substring(0, 10);
+                  setUserName(sanitized);
+                }}
+                placeholder="Your name (required, max 10 chars)"
+                placeholderTextColor={colors.secondary}
+                autoCapitalize="words"
+                autoCorrect={false}
+                maxLength={10}
+              />
+              <Text style={[styles.nameFormHint, { color: colors.secondary }]}>
+                This will be your display name in the app (required)
               </Text>
-
-              {currentStepData.description && (
-                <Text style={[styles.description, { color: colors.beige }]}>
-                  {currentStepData.description}
-                </Text>
-              )}
-
-              {/* Special content for plan selection */}
-              {currentStep === 5 && (
-                <View style={styles.plansContainer}>
-                  <Text style={{ color: 'white', fontSize: 16, marginBottom: 10 }}>
-                  </Text>
-                  {FASTING_PLANS.map((plan) => (
-                    <TouchableOpacity
-                      key={plan.id}
-                      onPress={() => setSelectedPlan(plan.id)}
-                      style={[
-                        styles.planCard,
-                        selectedPlan === plan.id && styles.selectedPlanCard,
-                        { borderColor: selectedPlan === plan.id ? colors.accent : colors.border }
-                      ]}
-                    >
-                      <View style={styles.planCardContent}>
-                        <View style={styles.planInfo}>
-                          <Text style={[styles.planName, { color: colors.beige }]}>{plan.name}</Text>
-                          <Text style={[styles.planDescription, { color: colors.beige }]}>
-                            {plan.fastingHours}h fast / {24 - plan.fastingHours}h eating
-                          </Text>
-                          <Text style={[styles.planDifficulty, { color: colors.accent }]}>
-                            {plan.difficulty}
-                          </Text>
-                        </View>
-                        {selectedPlan === plan.id && (
-                          <IconSymbol name="checkmark.circle.fill" size={24} color={colors.accent} />
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* Special content for name input */}
-              {currentStep === 6 && (
-                <View style={styles.nameFormContainer}>
-                  <Text style={[styles.nameFormLabel, { color: colors.beige }]}>
-                    Enter your soldier name:
-                  </Text>
-                  <TextInput
-                    style={[styles.nameInput, {
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                      color: colors.beige
-                    }]}
-                    value={userName}
-                    onChangeText={(text) => {
-                      // Limit input to 10 characters and sanitize in real-time
-                      const sanitized = text
-                        .replace(/[<>'"&]/g, '')
-                        .replace(/\s+/g, ' ')
-                        .substring(0, 10);
-                      setUserName(sanitized);
-                    }}
-                    placeholder="Your name (required, max 10 chars)"
-                    placeholderTextColor={colors.secondary}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                    maxLength={10}
-                  />
-                  <Text style={[styles.nameFormHint, { color: colors.secondary }]}>
-                    This will be your display name in the app (required)
-                  </Text>
-                </View>
-              )}
             </View>
+          )}
+        </View>
 
-            {/* Navigation Buttons */}
-            <View style={styles.navigation}>
-              <View style={styles.navigationLeft}>
-                {currentStep > 0 && (
-                  <MilitaryButton
-                    title="Previous"
-                    onPress={prevStep}
-                    variant="secondary"
-                    size="medium"
-                  />
-                )}
-              </View>
+        {/* Navigation Buttons */}
+        <View style={styles.navigation}>
+          <View style={styles.navigationLeft}>
+            {currentStep > 0 && (
+              <MilitaryButton
+                title="Previous"
+                onPress={prevStep}
+                variant="secondary"
+                size="medium"
+              />
+            )}
+          </View>
 
-              <View style={styles.navigationRight}>
-                <MilitaryButton
-                  title={
-                    currentStep === onboardingSteps.length - 1
-                      ? 'Start Mission'
-                      : 'Next'
-                  }
-                  onPress={nextStep}
-                  variant={
-                    (currentStep === 5 && !selectedPlan) ||
-                      (currentStep === onboardingSteps.length - 1 && !userName.trim())
-                      ? "secondary"
-                      : "primary"
-                  }
-                  size="medium"
-                />
-              </View>
-            </View>
-          </ScrollView>
-        </PanGestureHandler>
+          <View style={styles.navigationRight}>
+            <MilitaryButton
+              title={
+                currentStep === onboardingSteps.length - 1
+                  ? 'Start Mission'
+                  : 'Next'
+              }
+              onPress={nextStep}
+              variant={
+                (currentStep === 5 && !selectedPlan) ||
+                  (currentStep === onboardingSteps.length - 1 && !userName.trim())
+                  ? "secondary"
+                  : "primary"
+              }
+              size="medium"
+            />
+          </View>
+        </View>
+      </ScrollView>
 
-        {/* Loading Overlay */}
-        <LoadingScreen />
+      {/* Loading Overlay */}
+      <LoadingScreen />
 
-        {/* Subscription Overlay */}
-        <SubscriptionOverlay />
-      </SafeAreaView>
-    </GestureHandlerRootView>
+      {/* Subscription Overlay */}
+      <SubscriptionOverlay />
+    </SafeAreaView>
   );
 }
 
@@ -637,9 +639,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  tapAreas: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    zIndex: 1,
+  },
+  leftTapArea: {
+    flex: 1,
+    height: '100%',
+  },
+  rightTapArea: {
+    flex: 1,
+    height: '100%',
+  },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
+    zIndex: 2,
   },
   heroSection: {
     alignItems: 'center',
