@@ -104,6 +104,74 @@ export default function OnboardingScreen() {
   // Get refreshUserData from UserProfileProvider
   const { refreshUserData } = useUserProfile();
 
+  // Animation values for slide transitions
+  const slideOpacity = useSharedValue(0);
+  const slideTranslateY = useSharedValue(50);
+  const iconScale = useSharedValue(0);
+  const iconRotation = useSharedValue(-180);
+  const statBadgeScale = useSharedValue(0);
+  const statBadgeOpacity = useSharedValue(0);
+  const shimmerOpacity = useSharedValue(0.3);
+
+  // Animate on step change
+
+  useEffect(() => {
+    // Haptic feedback on slide change
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Reset and animate slide content
+    slideOpacity.value = 0;
+    slideTranslateY.value = 50;
+    iconScale.value = 0;
+    iconRotation.value = -180;
+    statBadgeScale.value = 0;
+    statBadgeOpacity.value = 0;
+
+    // Staggered animation sequence
+    slideOpacity.value = withTiming(1, { duration: 600 });
+    slideTranslateY.value = withTiming(0, { duration: 600 });
+
+    iconScale.value = withSequence(
+      withTiming(0, { duration: 200 }),
+      withTiming(1.2, { duration: 400 }),
+      withTiming(1, { duration: 200 })
+    );
+
+    iconRotation.value = withTiming(0, { duration: 600 });
+
+    // Stat badge pops in after content
+    setTimeout(() => {
+      statBadgeScale.value = withSequence(
+        withTiming(1.3, { duration: 300 }),
+        withTiming(1, { duration: 200 })
+      );
+      statBadgeOpacity.value = withTiming(1, { duration: 400 });
+    }, 400);
+  }, [currentStep]);
+
+  // Continuous pulse animation for icon
+
+  useEffect(() => {
+    iconScale.value = withRepeat(
+      withSequence(
+        withTiming(1.05, { duration: 1500 }),
+        withTiming(1, { duration: 1500 })
+      ),
+      -1,
+      true
+    );
+
+    // Shimmer effect for stat badges
+    shimmerOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.6, { duration: 1200 }),
+        withTiming(0.3, { duration: 1200 })
+      ),
+      -1,
+      true
+    );
+  }, [currentStep]);
+
   // Validate and sanitize username
   const validateAndSanitizeName = (name: string): string => {
     // Remove any potential SQL injection characters and limit length
@@ -140,9 +208,31 @@ export default function OnboardingScreen() {
   //   initializeRevenueCat();
   // }, [userName]);
 
+  // Animated styles
+  const slideAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: slideOpacity.value,
+    transform: [{ translateY: slideTranslateY.value }],
+  }));
+
+  const iconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: iconScale.value },
+      { rotate: `${iconRotation.value}deg` }
+    ],
+  }));
+
+  const statBadgeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: statBadgeScale.value }],
+    opacity: statBadgeOpacity.value,
+  }));
+
+  const shimmerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: shimmerOpacity.value,
+  }));
+
   const nextStep = () => {
-    // Haptic feedback for navigation
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Medium haptic feedback for navigation - more satisfying
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (currentStep < onboardingSteps.length - 1) {
       // Check if we're on the plan selection step (step 5, index 5)
@@ -471,17 +561,17 @@ export default function OnboardingScreen() {
       )}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero Section for first step */}
+        {/* Hero Section for first step with animation */}
         {currentStep === 0 && (
-          <View style={styles.heroSection}>
-            <View style={styles.warriorSilhouette}>
+          <Animated.View style={[styles.heroSection, slideAnimatedStyle]}>
+            <Animated.View style={[styles.warriorSilhouette, iconAnimatedStyle]}>
               <IconSymbol name="figure.walk" size={120} color={colors.accent} />
               <View style={[styles.cloak, { backgroundColor: colors.accent + '40' }]} />
-            </View>
+            </Animated.View>
             <Text style={[styles.heroText, { color: colors.beige }]}>
               START YOUR TRAINING
             </Text>
-          </View>
+          </Animated.View>
         )}
 
         {/* Progress Indicator */}
@@ -499,25 +589,25 @@ export default function OnboardingScreen() {
           ))}
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
+        {/* Content with animations */}
+        <Animated.View style={[styles.content, slideAnimatedStyle]}>
           {currentStep !== 0 && currentStep !== 5 && currentStep !== 6 && (
-            <View style={styles.iconContainer}>
+            <Animated.View style={[styles.iconContainer, iconAnimatedStyle]}>
               <IconSymbol
                 name={currentStepData.icon as any}
                 size={80}
                 color={currentStepData.color}
               />
-            </View>
+            </Animated.View>
           )}
           {(currentStep === 5 || currentStep === 6) && (
-            <View style={styles.smallIconContainer}>
+            <Animated.View style={[styles.smallIconContainer, iconAnimatedStyle]}>
               <IconSymbol
                 name={currentStepData.icon as any}
                 size={40}
                 color={currentStepData.color}
               />
-            </View>
+            </Animated.View>
           )}
 
           <Text style={[styles.title, { color: colors.beige }]}>
@@ -537,15 +627,22 @@ export default function OnboardingScreen() {
             </Text>
           )}
 
-          {/* Stats badge for social proof */}
+          {/* Stats badge for social proof with animation and shimmer */}
           {currentStepData.stat && currentStep < 5 && (
             <Animated.View style={[
               styles.statBadge,
+              statBadgeAnimatedStyle,
               {
                 backgroundColor: currentStepData.color + '20',
                 borderColor: currentStepData.color,
               }
             ]}>
+              {/* Shimmer overlay */}
+              <Animated.View style={[
+                styles.shimmerOverlay,
+                shimmerAnimatedStyle,
+                { backgroundColor: currentStepData.color }
+              ]} />
               <Text style={[styles.statText, { color: currentStepData.color }]}>
                 {currentStepData.stat}
               </Text>
@@ -560,7 +657,10 @@ export default function OnboardingScreen() {
               {FASTING_PLANS.map((plan) => (
                 <TouchableOpacity
                   key={plan.id}
-                  onPress={() => setSelectedPlan(plan.id)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setSelectedPlan(plan.id);
+                  }}
                   style={[
                     styles.planCard,
                     selectedPlan === plan.id && styles.selectedPlanCard,
@@ -600,12 +700,20 @@ export default function OnboardingScreen() {
                 }]}
                 value={userName}
                 onChangeText={(text) => {
+                  // Light haptic on each character
+                  if (text.length > userName.length) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }
+
                   // Limit input to 10 characters and sanitize in real-time
                   const sanitized = text
                     .replace(/[<>'"&]/g, '')
                     .replace(/\s+/g, ' ')
                     .substring(0, 10);
                   setUserName(sanitized);
+                }}
+                onFocus={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
                 placeholder="Your name (required, max 10 chars)"
                 placeholderTextColor={colors.secondary}
@@ -628,7 +736,7 @@ export default function OnboardingScreen() {
               </View>
             </View>
           )}
-        </View>
+        </Animated.View>
 
         {/* Navigation Buttons */}
         <View style={styles.navigation}>
@@ -785,6 +893,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     alignSelf: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  shimmerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 20,
   },
   statText: {
     fontSize: 14,
@@ -793,6 +911,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     fontFamily: 'military',
+    zIndex: 1,
   },
   plansContainer: {
     marginTop: 5,
