@@ -11,9 +11,9 @@ import {
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
 import { useFasting } from '@/src/hooks/useFasting';
-import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { clearAllData } from '@/src/lib/db';
+import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -163,19 +163,36 @@ export default function HomeScreen() {
     };
 
     const endFastHandler = () => {
-        Alert.alert('End Fast', 'Are you sure you want to end your current fast? You will not receive XP.', [
+        Alert.alert('End Fast', 'Are you sure you want to end your current fast?', [
             { text: 'Cancel', style: 'cancel' },
             {
                 text: 'End Fast',
                 style: 'destructive',
                 onPress: async () => {
-                    if (currentFast) {
+                    if (currentFast && plan) {
                         try {
-                            await endFast(currentFast.id!, 0);
+                            // Calculate XP based on how much of the fast was completed
+                            const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
+                            const xpEarned = Math.floor(getXPReward(plan.fastingHours) * progress);
+
+                            await endFast(currentFast.id!, xpEarned);
+                            await addXP(xpEarned);
+
                             setIsRunning(false);
                             setTimeRemaining(0);
+
+                            if (xpEarned > 0) {
+                                Alert.alert('Fast Ended', `You earned ${xpEarned} XP for your progress.`, [
+                                    { text: 'OK' },
+                                ]);
+                            } else {
+                                Alert.alert('Fast Ended', 'Fast ended early - no XP earned.', [
+                                    { text: 'OK' },
+                                ]);
+                            }
                         } catch (error) {
                             console.error('Failed to end fast:', error);
+                            Alert.alert('Error', 'Failed to end fast. Please try again.');
                         }
                     }
                 },

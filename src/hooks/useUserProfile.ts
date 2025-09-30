@@ -33,6 +33,7 @@ export const useUserProfile = () => {
         getAchievements()
       ]);
       
+      console.log('useUserProfile - Loaded user data - XP:', profile?.totalXP || 0);
       setUserProfile(profile);
       setAchievements(userAchievements);
     } catch (error) {
@@ -47,9 +48,11 @@ export const useUserProfile = () => {
 
     try {
       const newTotalXP = userProfile.totalXP + xpToAdd;
+      console.log('useUserProfile - Adding XP:', xpToAdd, 'New total:', newTotalXP);
       await updateUserXP(newTotalXP);
       
       // Reload user data to ensure all components get updated
+      console.log('useUserProfile - Reloading user data after XP update');
       await loadUserData();
     } catch (error) {
       console.error('Failed to add XP:', error);

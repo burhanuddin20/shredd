@@ -4,6 +4,7 @@ import { MilitaryButton } from '@/components/ui/military-button';
 import { FASTING_PLANS } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { saveUser } from '@/src/lib/db';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -94,6 +95,9 @@ export default function OnboardingScreen() {
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+
+  // Get refreshUserData from UserProfileProvider
+  const { refreshUserData } = useUserProfile();
 
   // Validate and sanitize username
   const validateAndSanitizeName = (name: string): string => {
@@ -264,6 +268,9 @@ export default function OnboardingScreen() {
 
       // Log user data
       console.log('User saved to database:', validatedName, 'Plan:', finalPlan);
+
+      // Refresh user data in UserProfileProvider
+      await refreshUserData();
 
       // Success haptic
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

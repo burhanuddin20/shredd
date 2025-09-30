@@ -12,8 +12,8 @@ import {
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
 import { useFasting } from '@/src/hooks/useFasting';
-import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
+import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import { router } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -36,6 +36,8 @@ export default function ProfileScreen() {
     const { isInitialized: dbInitialized } = useDatabase();
     const { userProfile, achievements, isLoading } = useUserProfile();
 
+    console.log('ProfileScreen - Component rendered, userProfile XP:', userProfile?.totalXP || 0);
+
     const [showAllAchievements, setShowAllAchievements] = useState(false);
     const [showAllHistory, setShowAllHistory] = useState(false);
 
@@ -45,10 +47,17 @@ export default function ProfileScreen() {
 
     // Debug logging (only log when data actually changes)
     const prevFastHistoryLength = React.useRef(fastHistory.length);
+    const prevUserXP = React.useRef(userProfile?.totalXP || 0);
+
     if (prevFastHistoryLength.current !== fastHistory.length) {
         console.log('ProfileScreen - fastHistory length changed:', prevFastHistoryLength.current, '->', fastHistory.length);
         console.log('ProfileScreen - completed fasts:', totalFasts);
         prevFastHistoryLength.current = fastHistory.length;
+    }
+
+    if (prevUserXP.current !== (userProfile?.totalXP || 0)) {
+        console.log('ProfileScreen - user XP changed:', prevUserXP.current, '->', userProfile?.totalXP || 0);
+        prevUserXP.current = userProfile?.totalXP || 0;
     }
 
     // Calculate longest streak from fast history
@@ -142,11 +151,30 @@ export default function ProfileScreen() {
         closeAchievement,
     } = useAnimations();
 
+    // Debug loading states
+    console.log('ProfileScreen - Loading states:', {
+        fontsLoaded,
+        dbInitialized,
+        isLoading,
+        fastHistoryLoading,
+        userProfile: !!userProfile,
+        user: !!user,
+        userProfileXP: userProfile?.totalXP
+    });
+
     if (!fontsLoaded || !dbInitialized || isLoading || fastHistoryLoading || !userProfile || !user) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>
                     <Text style={styles.loadingText}>Loading profile...</Text>
+                    <Text style={[styles.loadingText, { fontSize: 12, marginTop: 10 }]}>
+                        {!fontsLoaded ? 'Loading fonts...' :
+                            !dbInitialized ? 'Initializing database...' :
+                                isLoading ? 'Loading user profile...' :
+                                    fastHistoryLoading ? 'Loading fast history...' :
+                                        !userProfile ? 'No user profile found...' :
+                                            !user ? 'Processing user data...' : 'Unknown loading state...'}
+                    </Text>
                 </View>
             </SafeAreaView>
         );

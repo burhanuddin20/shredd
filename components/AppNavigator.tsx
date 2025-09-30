@@ -1,6 +1,6 @@
 import { COLORS, FONTS } from '@/components/shared/theme';
-import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
+import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
