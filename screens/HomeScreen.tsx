@@ -10,9 +10,9 @@ import {
     getXPReward,
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
-import { useFasting } from '@/src/hooks/useFasting';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { clearAllData, getCompletedFastsCount } from '@/src/lib/db';
+import { useFasting } from '@/src/lib/FastingProvider';
 import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import React, { useCallback, useEffect, useRef, useState } from 'react';

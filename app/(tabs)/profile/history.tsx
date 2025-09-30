@@ -2,8 +2,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { FASTING_PLANS } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useFasting } from '@/src/hooks/useFasting';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
+import { useFasting } from '@/src/lib/FastingProvider';
 import { Stack } from 'expo-router';
 import React, { useState } from 'react';
 import {

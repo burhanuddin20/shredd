@@ -11,12 +11,12 @@ import {
     getRankName,
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
-import { useFasting } from '@/src/hooks/useFasting';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
+import { useFasting } from '@/src/lib/FastingProvider';
 import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
-import { router, useFocusEffect } from 'expo-router';
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import { router } from 'expo-router';
+import React, { memo, useMemo, useState } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -47,16 +47,9 @@ const ProfileScreen = memo(function ProfileScreen() {
     const [showAllHistory, setShowAllHistory] = useState(false);
 
     // Calculate real stats from database
-    const { fastHistory, isLoading: fastHistoryLoading, refreshData } = useFasting();
+    // FastingProvider is shared across all screens, so data updates automatically
+    const { fastHistory, isLoading: fastHistoryLoading } = useFasting();
     const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
-
-    // Refresh fast history when screen comes into focus
-    useFocusEffect(
-        useCallback(() => {
-            console.log('ProfileScreen - Screen focused, refreshing data');
-            refreshData();
-        }, [refreshData])
-    );
 
     // Debug logging (only log when data actually changes)
     const prevFastHistoryLength = React.useRef(fastHistory.length);
@@ -147,7 +140,8 @@ const ProfileScreen = memo(function ProfileScreen() {
         };
     }, [userProfile, longestStreak, totalFasts, achievements]);
 
-    const [previousXP] = useState((user?.totalXP || 0) - 50); // Mock previous XP for animation
+    // Track previous XP for smooth animations (only updates when XP actually changes)
+    const [previousXP, setPreviousXP] = useState(userProfile?.totalXP || 0);
 
     const userLevel = useMemo(() => calculateLevel(user?.totalXP || 0), [user?.totalXP]);
     const rankName = useMemo(() => getRankName(userLevel.level), [userLevel.level]);
@@ -164,17 +158,71 @@ const ProfileScreen = memo(function ProfileScreen() {
         closeAchievement,
     } = useAnimations();
 
+    // Track level changes and trigger level up animation
+    const prevLevel = React.useRef(userLevel.level);
+    const prevAchievementCount = React.useRef(achievements.length);
+    const isInitialMount = React.useRef(true);
+
+    React.useEffect(() => {
+        const currentXP = userProfile?.totalXP || 0;
+        const currentLevel = calculateLevel(currentXP).level;
+
+        // On first mount, just initialize previousXP without animation
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            setPreviousXP(currentXP);
+            prevLevel.current = currentLevel;
+            return;
+        }
+
+        // Check if XP changed and if we leveled up
+        if (currentXP !== previousXP) {
+            const prevLevelCalc = calculateLevel(previousXP).level;
+
+            if (currentLevel > prevLevelCalc) {
+                // Level up detected!
+                const xpGained = currentXP - previousXP;
+                const newRank = getRankName(currentLevel);
+                console.log(`ProfileScreen - Level up! ${prevLevelCalc} → ${currentLevel} (Rank: ${newRank})`);
+                triggerLevelUp(currentLevel, xpGained);
+            }
+
+            // Update previousXP after checking level
+            setPreviousXP(currentXP);
+        }
+    }, [userProfile?.totalXP, previousXP, triggerLevelUp]);
+
+    // Track achievement unlocks and trigger animation
+    React.useEffect(() => {
+        if (achievements.length > prevAchievementCount.current && prevAchievementCount.current > 0) {
+            // New achievement unlocked!
+            const newAchievements = achievements.slice(prevAchievementCount.current);
+            const latestAchievement = newAchievements[0];
+
+            // Find the achievement details from ACHIEVEMENTS constant
+            const achievementDetails = ACHIEVEMENTS.find(a => a.id === latestAchievement.id);
+
+            if (achievementDetails) {
+                console.log('ProfileScreen - Achievement unlocked:', achievementDetails.name);
+                triggerAchievementUnlock(achievementDetails, true);
+            }
+        }
+
+        prevAchievementCount.current = achievements.length;
+    }, [achievements, triggerAchievementUnlock]);
+
     // Debug loading states (only when loading)
+    // Track loading state to avoid log spam
     const isCurrentlyLoading = !fontsLoaded || !dbInitialized || isLoading || fastHistoryLoading || !userProfile || !user;
-    if (isCurrentlyLoading) {
-        console.log('ProfileScreen - Loading:', {
-            fontsLoaded,
-            dbInitialized,
-            isLoading,
-            fastHistoryLoading,
-            userProfile: !!userProfile,
-            user: !!user
-        });
+    const prevLoadingState = React.useRef(isCurrentlyLoading);
+
+    if (isCurrentlyLoading !== prevLoadingState.current) {
+        if (isCurrentlyLoading) {
+            console.log('ProfileScreen - Loading started');
+        } else {
+            console.log('ProfileScreen - Loading complete');
+        }
+        prevLoadingState.current = isCurrentlyLoading;
     }
 
     if (!fontsLoaded || !dbInitialized || isLoading || fastHistoryLoading || !userProfile || !user) {
