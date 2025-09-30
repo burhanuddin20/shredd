@@ -1,4 +1,4 @@
-import { calculateLevel } from '@/constants/game';
+import { calculateLevel, XP_PER_LEVEL } from '@/constants/game';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -30,8 +30,12 @@ export const AnimatedXPProgressBar: React.FC<AnimatedXPProgressBarProps> = ({
 }) => {
     const userLevel = calculateLevel(currentXP);
     const previousUserLevel = calculateLevel(previousXP);
-    const currentLevelXP = userLevel.currentLevelXP;
-    const nextLevelXP = userLevel.nextLevelXP;
+    const currentLevelXP = userLevel.currentLevelXP; // XP within current level (e.g., 50 for 300 total XP at level 2)
+    const nextLevelXP = userLevel.nextLevelXP; // XP needed for next level (e.g., 250 for level 2→3)
+
+    // Get the actual XP thresholds for display
+    const currentLevelThreshold = XP_PER_LEVEL[userLevel.level] || 0; // e.g., 250 for level 2
+    const nextLevelThreshold = XP_PER_LEVEL[userLevel.level + 1] || currentLevelThreshold; // e.g., 500 for level 3
 
     // Check if level up occurred
     const leveledUp = userLevel.level > previousUserLevel.level;
@@ -42,8 +46,8 @@ export const AnimatedXPProgressBar: React.FC<AnimatedXPProgressBarProps> = ({
     const xpScale = useSharedValue(1);
 
     useEffect(() => {
-        // Calculate progress
-        const progress = (currentXP - currentLevelXP) / (nextLevelXP - currentLevelXP);
+        // Calculate progress within current level
+        const progress = nextLevelXP > 0 ? currentLevelXP / nextLevelXP : 0;
         const targetWidth = Math.min(progress * 100, 100);
 
         if (leveledUp) {
@@ -96,8 +100,8 @@ export const AnimatedXPProgressBar: React.FC<AnimatedXPProgressBarProps> = ({
                     />
                 </View>
                 <View style={styles.xpLabels}>
-                    <Text style={styles.xpLabel}>{currentLevelXP} XP</Text>
-                    <Text style={styles.xpLabel}>{nextLevelXP} XP</Text>
+                    <Text style={styles.xpLabel}>{currentLevelThreshold} XP</Text>
+                    <Text style={styles.xpLabel}>{nextLevelThreshold} XP</Text>
                 </View>
             </View>
 
