@@ -589,6 +589,16 @@ export default function OnboardingScreen() {
               <Text style={[styles.nameFormHint, { color: colors.secondary }]}>
                 This will be your display name in the app (required)
               </Text>
+              
+              {/* Start Mission Button - only on name entry step */}
+              <View style={styles.nameFormButtonContainer}>
+                <MilitaryButton
+                  title="Start Mission"
+                  onPress={nextStep}
+                  variant={!userName.trim() ? "secondary" : "primary"}
+                  size="medium"
+                />
+              </View>
             </View>
           )}
         </View>
@@ -606,23 +616,21 @@ export default function OnboardingScreen() {
             )}
           </View>
 
-          <View style={styles.navigationRight}>
-            <MilitaryButton
-              title={
-                currentStep === onboardingSteps.length - 1
-                  ? 'Start Mission'
-                  : 'Next'
-              }
-              onPress={nextStep}
-              variant={
-                (currentStep === 5 && !selectedPlan) ||
-                  (currentStep === onboardingSteps.length - 1 && !userName.trim())
-                  ? "secondary"
-                  : "primary"
-              }
-              size="medium"
-            />
-          </View>
+          {/* Only show Next button when not on name entry step */}
+          {currentStep !== 6 && (
+            <View style={styles.navigationRight}>
+              <MilitaryButton
+                title="Next"
+                onPress={nextStep}
+                variant={
+                  (currentStep === 5 && !selectedPlan)
+                    ? "secondary"
+                    : "primary"
+                }
+                size="medium"
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -864,6 +872,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.8,
     fontFamily: 'body',
+  },
+  nameFormButtonContainer: {
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
   },
   // Loading Overlay Styles
   loadingOverlay: {
