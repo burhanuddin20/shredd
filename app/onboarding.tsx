@@ -432,31 +432,31 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.tapAreas}>
-        {/* Left tap area for going back */}
-        <TouchableOpacity
-          style={styles.leftTapArea}
-          onPress={prevStep}
-          disabled={currentStep === 0}
-        />
-
-        {/* Right tap area for going forward */}
-        <TouchableOpacity
-          style={styles.rightTapArea}
-          onPress={() => {
-            // Only allow forward navigation if conditions are met
-            if (currentStep === 5 && !selectedPlan) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', 'Please select a fasting plan');
-            } else if (currentStep === onboardingSteps.length - 1 && !userName.trim()) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', 'Please enter a valid name');
-            } else {
-              nextStep();
-            }
-          }}
-        />
-      </View>
+      {/* Only show tap areas when not on plan selection or name entry steps */}
+      {currentStep !== 5 && currentStep !== 6 && (
+        <View style={styles.tapAreas}>
+          {/* Left tap area for going back */}
+          <TouchableOpacity
+            style={styles.leftTapArea}
+            onPress={prevStep}
+            disabled={currentStep === 0}
+          />
+          
+          {/* Right tap area for going forward */}
+          <TouchableOpacity
+            style={styles.rightTapArea}
+            onPress={() => {
+              // Only allow forward navigation if conditions are met
+              if (currentStep === onboardingSteps.length - 1 && !userName.trim()) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                Alert.alert('Error', 'Please enter a valid name');
+              } else {
+                nextStep();
+              }
+            }}
+          />
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Hero Section for first step */}
