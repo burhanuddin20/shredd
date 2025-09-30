@@ -16,7 +16,7 @@ import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import { router } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -28,7 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 
-export default function ProfileScreen() {
+const ProfileScreen = memo(function ProfileScreen() {
     const [fontsLoaded] = useFonts({
         Anton_400Regular,
     });
@@ -36,7 +36,12 @@ export default function ProfileScreen() {
     const { isInitialized: dbInitialized } = useDatabase();
     const { userProfile, achievements, isLoading } = useUserProfile();
 
-    console.log('ProfileScreen - Component rendered, userProfile XP:', userProfile?.totalXP || 0);
+    // Only log when XP actually changes
+    const prevXP = React.useRef(userProfile?.totalXP || 0);
+    if (prevXP.current !== (userProfile?.totalXP || 0)) {
+        console.log('ProfileScreen - XP changed:', prevXP.current, '->', userProfile?.totalXP || 0);
+        prevXP.current = userProfile?.totalXP || 0;
+    }
 
     const [showAllAchievements, setShowAllAchievements] = useState(false);
     const [showAllHistory, setShowAllHistory] = useState(false);
@@ -93,8 +98,8 @@ export default function ProfileScreen() {
     const longestStreak = calculateLongestStreak(fastHistory);
 
     // Format fast history for display
-    const formatFastHistory = useCallback((fasts: typeof fastHistory) => {
-        return fasts
+    const formattedFastHistory = useMemo(() => {
+        return fastHistory
             .filter(fast => fast.status === 'completed' || fast.status === 'cancelled')
             .map(fast => {
                 const startDate = new Date(fast.startTime);
@@ -114,30 +119,30 @@ export default function ProfileScreen() {
                 };
             })
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, []);
-
-    const formattedFastHistory = useMemo(() => {
-        // Only log when actually recalculating due to data change
-        return formatFastHistory(fastHistory);
-    }, [fastHistory, formatFastHistory]);
+    }, [fastHistory]);
 
     // Use database user data only
-    const user = userProfile ? {
-        id: userProfile.id,
-        username: userProfile.username,
-        email: userProfile.email || '',
-        totalXP: userProfile.totalXP,
-        currentStreak: userProfile.streak,
-        longestStreak,
-        totalFasts,
-        achievements: achievements.map(a => a.id),
-        currentPlan: userProfile.currentPlan,
-        createdAt: new Date(userProfile.createdAt),
-    } : null;
+    const user = useMemo(() => {
+        if (!userProfile) return null;
+
+        return {
+            id: userProfile.id,
+            username: userProfile.username,
+            email: userProfile.email || '',
+            totalXP: userProfile.totalXP,
+            currentStreak: userProfile.streak,
+            longestStreak,
+            totalFasts,
+            achievements: achievements.map(a => a.id),
+            currentPlan: userProfile.currentPlan,
+            createdAt: new Date(userProfile.createdAt),
+        };
+    }, [userProfile, longestStreak, totalFasts, achievements]);
 
     const [previousXP] = useState((user?.totalXP || 0) - 50); // Mock previous XP for animation
-    const userLevel = calculateLevel(user?.totalXP || 0);
-    const rankName = getRankName(userLevel.level);
+
+    const userLevel = useMemo(() => calculateLevel(user?.totalXP || 0), [user?.totalXP]);
+    const rankName = useMemo(() => getRankName(userLevel.level), [userLevel.level]);
 
     // Animation hooks
     const {
@@ -151,16 +156,18 @@ export default function ProfileScreen() {
         closeAchievement,
     } = useAnimations();
 
-    // Debug loading states
-    console.log('ProfileScreen - Loading states:', {
-        fontsLoaded,
-        dbInitialized,
-        isLoading,
-        fastHistoryLoading,
-        userProfile: !!userProfile,
-        user: !!user,
-        userProfileXP: userProfile?.totalXP
-    });
+    // Debug loading states (only when loading)
+    const isCurrentlyLoading = !fontsLoaded || !dbInitialized || isLoading || fastHistoryLoading || !userProfile || !user;
+    if (isCurrentlyLoading) {
+        console.log('ProfileScreen - Loading:', {
+            fontsLoaded,
+            dbInitialized,
+            isLoading,
+            fastHistoryLoading,
+            userProfile: !!userProfile,
+            user: !!user
+        });
+    }
 
     if (!fontsLoaded || !dbInitialized || isLoading || fastHistoryLoading || !userProfile || !user) {
         return (
@@ -343,7 +350,9 @@ export default function ProfileScreen() {
             </ScrollView>
         </SafeAreaView>
     );
-}
+});
+
+export default ProfileScreen;
 
 const styles = StyleSheet.create({
     container: {
