@@ -49,8 +49,8 @@ export const useUserProfile = () => {
       const newTotalXP = userProfile.totalXP + xpToAdd;
       await updateUserXP(newTotalXP);
       
-      // Update local state
-      setUserProfile(prev => prev ? { ...prev, totalXP: newTotalXP } : null);
+      // Reload user data to ensure all components get updated
+      await loadUserData();
     } catch (error) {
       console.error('Failed to add XP:', error);
       throw error;
@@ -94,18 +94,18 @@ export const useUserProfile = () => {
   const checkAndUnlockAchievements = async (totalFasts: number, longestFastHours: number, currentStreak: number): Promise<void> => {
     const achievementChecks = [
       { id: 'first_fast', condition: totalFasts >= 1 },
-      { id: 'fast_12_hours', condition: longestFastHours >= 12 },
-      { id: 'fast_16_hours', condition: longestFastHours >= 16 },
-      { id: 'fast_18_hours', condition: longestFastHours >= 18 },
-      { id: 'fast_20_hours', condition: longestFastHours >= 20 },
-      { id: 'fast_24_hours', condition: longestFastHours >= 24 },
-      { id: 'streak_7_days', condition: currentStreak >= 7 },
-      { id: 'streak_14_days', condition: currentStreak >= 14 },
-      { id: 'streak_30_days', condition: currentStreak >= 30 },
-      { id: 'total_10_fasts', condition: totalFasts >= 10 },
-      { id: 'total_20_fasts', condition: totalFasts >= 20 },
-      { id: 'total_50_fasts', condition: totalFasts >= 50 },
-      { id: 'total_100_fasts', condition: totalFasts >= 100 },
+      { id: 'fast_12h', condition: longestFastHours >= 12 },
+      { id: 'fast_16h', condition: longestFastHours >= 16 },
+      { id: 'fast_18h', condition: longestFastHours >= 18 },
+      { id: 'fast_20h', condition: longestFastHours >= 20 },
+      { id: 'fast_24h', condition: longestFastHours >= 24 },
+      { id: 'streak_7d', condition: currentStreak >= 7 },
+      { id: 'streak_14d', condition: currentStreak >= 14 },
+      { id: 'streak_30d', condition: currentStreak >= 30 },
+      { id: 'total_10', condition: totalFasts >= 10 },
+      { id: 'total_20', condition: totalFasts >= 20 },
+      { id: 'total_50', condition: totalFasts >= 50 },
+      { id: 'total_100', condition: totalFasts >= 100 },
     ];
 
     for (const check of achievementChecks) {

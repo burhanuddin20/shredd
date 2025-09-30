@@ -145,6 +145,12 @@ export default function HomeScreen() {
             setTimeRemaining(plan.fastingHours * 60 * 60);
             setIsRunning(true);
 
+            // Check for first fast achievement
+            const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
+            if (totalFasts === 0) {
+                await checkAndUnlockAchievements(1, plan.fastingHours, user?.currentStreak || 0);
+            }
+
             Alert.alert(
                 'Fast Started!',
                 `Your ${plan.name} fast has begun. Good luck, soldier!`,
