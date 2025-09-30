@@ -2,11 +2,23 @@ import React from 'react';
 import Svg, { Circle, Defs, G, LinearGradient, Path, Polygon, Stop } from 'react-native-svg';
 import { COLORS } from './theme';
 
-// Color definitions for different rank tiers
+// Color definitions for different rank tiers with variations
 const RANK_COLORS = {
-    bronze: '#CD7F32',
-    silver: '#C0C0C0',
-    gold: '#FFD700',
+    // Bronze progression (darker to lighter)
+    bronze1: '#8B4513', // Dark bronze/saddle brown
+    bronze2: '#CD7F32', // Classic bronze
+
+    // Silver progression (darker to lighter with subtle blue tint)
+    silver1: '#A9A9A9', // Dark gray
+    silver2: '#C0C0C0', // Classic silver
+    silver3: '#D3D3D3', // Light silver
+
+    // Gold progression (warmer to brighter)
+    gold1: '#DAA520', // Goldenrod
+    gold2: '#FFD700', // Classic gold
+    gold3: '#FFA500', // Orange gold
+
+    // Special colors for high ranks
     special1: '#9370DB', // Purple for Colonel
     special2: '#4169E1', // Royal Blue for Commander
     special3: '#DC143C', // Crimson for General
@@ -16,9 +28,12 @@ const RANK_COLORS = {
     special7: '#FF1493', // Deep Pink for Legendary Warrior
 };
 
-// Scout Badge with color variants
-const ScoutBadge = ({ size = 32, color = COLORS.textSecondary }: { size?: number; color?: string }) => (
+// Scout Badge with color variants and optional glow
+const ScoutBadge = ({ size = 32, color = COLORS.textSecondary, showGlow = false }: { size?: number; color?: string; showGlow?: boolean }) => (
     <Svg width={size} height={size} viewBox="0 0 128 128">
+        {showGlow && (
+            <Circle cx="64" cy="64" r="56" fill="none" stroke={color} strokeWidth="2" opacity="0.2" />
+        )}
         <Path
             d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
             fill="none"
@@ -36,9 +51,15 @@ const ScoutBadge = ({ size = 32, color = COLORS.textSecondary }: { size?: number
     </Svg>
 );
 
-// Soldier Badge with color variants
-const SoldierBadge = ({ size = 32, color = COLORS.textSecondary }: { size?: number; color?: string }) => (
+// Soldier Badge with color variants and tier effects
+const SoldierBadge = ({ size = 32, color = COLORS.textSecondary, tier = 1 }: { size?: number; color?: string; tier?: number }) => (
     <Svg width={size} height={size} viewBox="0 0 128 128">
+        {tier >= 2 && (
+            <Circle cx="64" cy="64" r="56" fill="none" stroke={color} strokeWidth="2" opacity="0.2" />
+        )}
+        {tier >= 3 && (
+            <Circle cx="64" cy="64" r="60" fill="none" stroke={color} strokeWidth="1" opacity="0.15" />
+        )}
         <Path
             d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
             fill="none"
@@ -52,9 +73,22 @@ const SoldierBadge = ({ size = 32, color = COLORS.textSecondary }: { size?: numb
     </Svg>
 );
 
-// Captain Badge with color variants
-const CaptainBadge = ({ size = 32, color = RANK_COLORS.gold }: { size?: number; color?: string }) => (
+// Captain Badge with color variants and tier effects
+const CaptainBadge = ({ size = 32, color = RANK_COLORS.gold1, tier = 1 }: { size?: number; color?: string; tier?: number }) => (
     <Svg width={size} height={size} viewBox="0 0 128 128">
+        {/* Progressive glow based on tier */}
+        {tier >= 1 && (
+            <Circle cx="64" cy="64" r="56" fill="none" stroke={color} strokeWidth="2" opacity="0.15" />
+        )}
+        {tier >= 2 && (
+            <>
+                <Circle cx="64" cy="64" r="60" fill="none" stroke={color} strokeWidth="1" opacity="0.2" />
+                <Circle cx="64" cy="64" r="52" fill="none" stroke={color} strokeWidth="2" opacity="0.25" />
+            </>
+        )}
+        {tier >= 3 && (
+            <Circle cx="64" cy="64" r="64" fill="none" stroke={color} strokeWidth="1" opacity="0.3" />
+        )}
         <Path
             d="M64 10 L108 26 V62 C108 90 88 108 64 118 C40 108 20 90 20 62 V26 Z"
             fill="none"
@@ -161,23 +195,25 @@ export const getRankBadge = (rank: string, size = 32) => {
     switch (rank.toLowerCase()) {
         // Early ranks - Scout badge with progression
         case 'cadet':
-            return <ScoutBadge size={size} color={RANK_COLORS.bronze} />;
+            return <ScoutBadge size={size} color={RANK_COLORS.bronze1} showGlow={false} />;
         case 'trainee':
-            return <ScoutBadge size={size} color={RANK_COLORS.gold} />;
+            return <ScoutBadge size={size} color={RANK_COLORS.bronze2} showGlow={true} />;
 
         // Mid-low ranks - Soldier badge with progression
         case 'soldier':
-            return <SoldierBadge size={size} color={RANK_COLORS.silver} />;
+            return <SoldierBadge size={size} color={RANK_COLORS.silver1} tier={1} />;
         case 'corporal':
-            return <SoldierBadge size={size} color={RANK_COLORS.silver} />;
+            return <SoldierBadge size={size} color={RANK_COLORS.silver2} tier={2} />;
         case 'sergeant':
-            return <SoldierBadge size={size} color={RANK_COLORS.gold} />;
+            return <SoldierBadge size={size} color={RANK_COLORS.silver3} tier={3} />;
 
-        // Mid-high ranks - Captain badge (all gold)
+        // Mid-high ranks - Captain badge with progressive glow
         case 'lieutenant':
+            return <CaptainBadge size={size} color={RANK_COLORS.gold1} tier={1} />;
         case 'captain':
+            return <CaptainBadge size={size} color={RANK_COLORS.gold2} tier={2} />;
         case 'major':
-            return <CaptainBadge size={size} color={RANK_COLORS.gold} />;
+            return <CaptainBadge size={size} color={RANK_COLORS.gold3} tier={3} />;
 
         // High ranks - Commander badge with special colors
         case 'colonel':
@@ -200,6 +236,6 @@ export const getRankBadge = (rank: string, size = 32) => {
 
         // Default fallback
         default:
-            return <ScoutBadge size={size} color={RANK_COLORS.bronze} />;
+            return <ScoutBadge size={size} color={RANK_COLORS.bronze1} showGlow={false} />;
     }
 };
