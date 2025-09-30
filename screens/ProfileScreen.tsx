@@ -16,7 +16,7 @@ import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -40,8 +40,16 @@ export default function ProfileScreen() {
     const [showAllHistory, setShowAllHistory] = useState(false);
 
     // Calculate real stats from database
-    const { fastHistory } = useFasting();
+    const { fastHistory, isLoading: fastHistoryLoading } = useFasting();
     const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
+
+    // Debug logging (only log when data actually changes)
+    const prevFastHistoryLength = React.useRef(fastHistory.length);
+    if (prevFastHistoryLength.current !== fastHistory.length) {
+        console.log('ProfileScreen - fastHistory length changed:', prevFastHistoryLength.current, '->', fastHistory.length);
+        console.log('ProfileScreen - completed fasts:', totalFasts);
+        prevFastHistoryLength.current = fastHistory.length;
+    }
 
     // Calculate longest streak from fast history
     const calculateLongestStreak = (fasts: typeof fastHistory): number => {
@@ -76,7 +84,7 @@ export default function ProfileScreen() {
     const longestStreak = calculateLongestStreak(fastHistory);
 
     // Format fast history for display
-    const formatFastHistory = (fasts: typeof fastHistory) => {
+    const formatFastHistory = useCallback((fasts: typeof fastHistory) => {
         return fasts
             .filter(fast => fast.status === 'completed' || fast.status === 'cancelled')
             .map(fast => {
@@ -97,9 +105,12 @@ export default function ProfileScreen() {
                 };
             })
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    };
+    }, []);
 
-    const formattedFastHistory = formatFastHistory(fastHistory);
+    const formattedFastHistory = useMemo(() => {
+        // Only log when actually recalculating due to data change
+        return formatFastHistory(fastHistory);
+    }, [fastHistory, formatFastHistory]);
 
     // Use database user data only
     const user = userProfile ? {
@@ -131,7 +142,7 @@ export default function ProfileScreen() {
         closeAchievement,
     } = useAnimations();
 
-    if (!fontsLoaded || !dbInitialized || isLoading || !userProfile || !user) {
+    if (!fontsLoaded || !dbInitialized || isLoading || fastHistoryLoading || !userProfile || !user) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>

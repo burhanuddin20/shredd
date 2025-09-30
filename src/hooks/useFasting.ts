@@ -32,6 +32,12 @@ export const useFasting = () => {
         getFasts()
       ]);
       
+      // Only log when data actually changes
+      const completedFasts = allFasts.filter(f => f.status === 'completed').length;
+      if (allFasts.length !== fastHistory.length || completedFasts !== fastHistory.filter(f => f.status === 'completed').length) {
+        console.log('useFasting - Data updated - Total fasts:', allFasts.length, 'Completed:', completedFasts);
+      }
+      
       setCurrentFast(activeFast);
       setFastHistory(allFasts);
     } catch (error) {
@@ -62,10 +68,12 @@ export const useFasting = () => {
 
   const endFast = async (fastId: number, xpEarned: number): Promise<void> => {
     try {
+      console.log('useFasting - Ending fast:', fastId, 'with XP:', xpEarned);
       await updateFastStatus(fastId, 'completed', new Date().toISOString());
       await updateFastXP(fastId, xpEarned);
       
       // Reload data
+      console.log('useFasting - Reloading data after ending fast');
       await loadFastData();
     } catch (error) {
       console.error('Failed to end fast:', error);
