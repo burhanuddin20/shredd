@@ -49,6 +49,13 @@ export default function HomeScreen() {
     const [showPlanModal, setShowPlanModal] = useState(false);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // Update selectedPlan when userProfile changes
+    useEffect(() => {
+        if (userProfile?.currentPlan) {
+            setSelectedPlan(userProfile.currentPlan);
+        }
+    }, [userProfile?.currentPlan]);
+
     // Calculate real stats from database
     const { fastHistory } = useFasting();
     const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;

@@ -441,7 +441,7 @@ export default function OnboardingScreen() {
             onPress={prevStep}
             disabled={currentStep === 0}
           />
-          
+
           {/* Right tap area for going forward */}
           <TouchableOpacity
             style={styles.rightTapArea}
