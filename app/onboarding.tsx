@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -94,10 +95,22 @@ const onboardingSteps = [
 
 export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>('16:8'); // Default to 16:8
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+
+  // Validate and sanitize username
+  const validateAndSanitizeName = (name: string): string => {
+    // Remove any potential SQL injection characters and limit length
+    const sanitized = name
+      .replace(/[<>'"&]/g, '') // Remove potentially dangerous characters
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .trim()
+      .substring(0, 10); // Limit to 10 characters
+
+    return sanitized; // Return empty string if no valid name provided
+  };
   // const [isSubscribing, setIsSubscribing] = useState(false); // Commented out - not needed for placeholder
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
@@ -128,15 +141,28 @@ export default function OnboardingScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (currentStep < onboardingSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      // Check if we're on the plan selection step (step 5, index 5)
+      if (currentStep === 5) {
+        if (selectedPlan) {
+          setCurrentStep(currentStep + 1);
+        } else {
+          // Show error feedback for no plan selected
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert('Error', 'Please select a fasting plan');
+        }
+      } else {
+        setCurrentStep(currentStep + 1);
+      }
     } else {
       // On final step, require name input
-      if (userName.trim()) {
-        console.log('User name:', userName, 'Selected plan:', selectedPlan);
+      const trimmedName = userName.trim();
+      if (trimmedName.length > 0) {
+        console.log('User name:', trimmedName, 'Selected plan:', selectedPlan || '16:8');
         startLoadingSequence();
       } else {
-        // Could show an alert here asking user to enter their name
-        console.log('No name entered');
+        // Show error feedback for empty name
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Error', 'Please enter a valid name');
       }
     }
   };
@@ -220,20 +246,29 @@ export default function OnboardingScreen() {
       // Haptic feedback
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+      // Validate and sanitize the username
+      const validatedName = validateAndSanitizeName(userName);
+      const finalPlan = selectedPlan || '16:8'; // Default plan if none selected
+
+      // Ensure we have a valid name
+      if (!validatedName || validatedName.trim().length === 0) {
+        throw new Error('Valid name is required');
+      }
+
       // Save user data to SQLite
       await saveUser({
         id: `user_${Date.now()}`, // Generate unique user ID
-        username: userName.trim(),
+        username: validatedName,
         email: undefined, // No email collected in onboarding
         totalXP: 0,
         streak: 0,
-        currentPlan: selectedPlan,
+        currentPlan: finalPlan,
         createdAt: new Date().toISOString(),
         synced: false,
       });
 
       // Log user data
-      console.log('User saved to database:', userName, 'Plan:', selectedPlan);
+      console.log('User saved to database:', validatedName, 'Plan:', finalPlan);
 
       // Success haptic
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -533,15 +568,22 @@ export default function OnboardingScreen() {
                       color: colors.beige
                     }]}
                     value={userName}
-                    onChangeText={setUserName}
-                    placeholder="Your name"
+                    onChangeText={(text) => {
+                      // Limit input to 10 characters and sanitize in real-time
+                      const sanitized = text
+                        .replace(/[<>'"&]/g, '')
+                        .replace(/\s+/g, ' ')
+                        .substring(0, 10);
+                      setUserName(sanitized);
+                    }}
+                    placeholder="Your name (required, max 10 chars)"
                     placeholderTextColor={colors.secondary}
                     autoCapitalize="words"
                     autoCorrect={false}
-                    maxLength={20}
+                    maxLength={10}
                   />
                   <Text style={[styles.nameFormHint, { color: colors.secondary }]}>
-                    This will be your display name in the app
+                    This will be your display name in the app (required)
                   </Text>
                 </View>
               )}
@@ -569,7 +611,8 @@ export default function OnboardingScreen() {
                   }
                   onPress={nextStep}
                   variant={
-                    currentStep === onboardingSteps.length - 1 && !userName.trim()
+                    (currentStep === 5 && !selectedPlan) ||
+                      (currentStep === onboardingSteps.length - 1 && !userName.trim())
                       ? "secondary"
                       : "primary"
                   }
