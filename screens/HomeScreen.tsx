@@ -294,10 +294,16 @@ export default function HomeScreen() {
                     </View>
                 </View>
 
-                {/* Leaderboard Section */}
+                
+                  {/* Leaderboard Section */}
+                {/* <View style={styles.leaderboardSection}> */}
+                    {/* <Text style={styles.leaderboardLabel}>LEADERBOARD</Text> */}
+                    {/* <Text style={styles.leaderboardPosition}></Text> */}
+                {/* </View> */}
+        
                 <View style={styles.leaderboardSection}>
-                    <Text style={styles.leaderboardLabel}>LEADERBOARD</Text>
-                    <Text style={styles.leaderboardPosition}>5th PLACE</Text>
+                    <Text style={styles.leaderboardLabel}>TOTAL FASTS</Text>
+                    <Text style={styles.leaderboardPosition}>{totalFasts}</Text>
                 </View>
 
                 {/* Action Button */}
