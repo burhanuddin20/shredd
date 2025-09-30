@@ -2,11 +2,6 @@ import React from 'react';
 import Svg, { G, Path, Polygon } from 'react-native-svg';
 import { COLORS } from './theme';
 
-interface RankBadgeProps {
-    rank: string;
-    size?: number;
-}
-
 const ScoutBadge = ({ size = 32 }: { size?: number }) => (
     <Svg width={size} height={size} viewBox="0 0 128 128">
         <Path
@@ -119,19 +114,40 @@ const LegendaryWarriorBadge = ({ size = 32 }: { size?: number }) => (
 
 export const getRankBadge = (rank: string, size = 32) => {
     switch (rank.toLowerCase()) {
-        case 'scout':
+        // Early ranks - use Scout badge
+        case 'cadet': //    bronze
+        case 'trainee': // gold
             return <ScoutBadge size={size} />;
-        case 'soldier':
+
+        // Mid-low ranks - use Soldier badge
+        case 'soldier': // silver
+        case 'corporal': // silder
+        case 'sergeant': // gold
             return <SoldierBadge size={size} />;
-        case 'captain':
+
+        // Mid-high ranks - use Captain badge
+        case 'lieutenant': // gold
+        case 'captain': // gold
+        case 'major': // gold
             return <CaptainBadge size={size} />;
-        case 'commander':
+
+        // High ranks - use Commander badge
+        case 'colonel': // special color 1
+        case 'commander': // special color 2
+        case 'general': // special color 3
+        case 'commander-in-chief': // special color 4
             return <CommanderBadge size={size} />;
-        case 'titan slayer':
+
+        // Elite ranks
+        case 'titan slayer': // special color 5 add some cool effects
             return <TitanSlayerBadge size={size} />;
-        case 'legendary warrior':
+
+        case "humanity's hope": // special color 6 add some cool effects
+        case 'legendary warrior': // special color 7 add some cool effects
             return <LegendaryWarriorBadge size={size} />;
+
+        // Default fallback
         default:
-            return <SoldierBadge size={size} />;
+            return <ScoutBadge size={size} />;
     }
 };

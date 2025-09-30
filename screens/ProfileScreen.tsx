@@ -51,20 +51,6 @@ const ProfileScreen = memo(function ProfileScreen() {
     const { fastHistory, isLoading: fastHistoryLoading } = useFasting();
     const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
 
-    // Debug logging (only log when data actually changes)
-    const prevFastHistoryLength = React.useRef(fastHistory.length);
-    const prevUserXP = React.useRef(userProfile?.totalXP || 0);
-
-    if (prevFastHistoryLength.current !== fastHistory.length) {
-        console.log('ProfileScreen - fastHistory length changed:', prevFastHistoryLength.current, '->', fastHistory.length);
-        console.log('ProfileScreen - completed fasts:', totalFasts);
-        prevFastHistoryLength.current = fastHistory.length;
-    }
-
-    if (prevUserXP.current !== (userProfile?.totalXP || 0)) {
-        console.log('ProfileScreen - user XP changed:', prevUserXP.current, '->', userProfile?.totalXP || 0);
-        prevUserXP.current = userProfile?.totalXP || 0;
-    }
 
     // Calculate longest streak from fast history
     const calculateLongestStreak = (fasts: typeof fastHistory): number => {
@@ -182,8 +168,6 @@ const ProfileScreen = memo(function ProfileScreen() {
             if (currentLevel > prevLevelCalc) {
                 // Level up detected!
                 const xpGained = currentXP - previousXP;
-                const newRank = getRankName(currentLevel);
-                console.log(`ProfileScreen - Level up! ${prevLevelCalc} → ${currentLevel} (Rank: ${newRank})`);
                 triggerLevelUp(currentLevel, xpGained);
             }
 
@@ -203,7 +187,6 @@ const ProfileScreen = memo(function ProfileScreen() {
             const achievementDetails = ACHIEVEMENTS.find(a => a.id === latestAchievement.id);
 
             if (achievementDetails) {
-                console.log('ProfileScreen - Achievement unlocked:', achievementDetails.name);
                 triggerAchievementUnlock(achievementDetails, true);
             }
         }
@@ -212,19 +195,6 @@ const ProfileScreen = memo(function ProfileScreen() {
     }, [achievements, triggerAchievementUnlock]);
 
     // Debug loading states (only when loading)
-    // Track loading state to avoid log spam
-    const isCurrentlyLoading = !fontsLoaded || !dbInitialized || isLoading || fastHistoryLoading || !userProfile || !user;
-    const prevLoadingState = React.useRef(isCurrentlyLoading);
-
-    if (isCurrentlyLoading !== prevLoadingState.current) {
-        if (isCurrentlyLoading) {
-            console.log('ProfileScreen - Loading started');
-        } else {
-            console.log('ProfileScreen - Loading complete');
-        }
-        prevLoadingState.current = isCurrentlyLoading;
-    }
-
     if (!fontsLoaded || !dbInitialized || isLoading || fastHistoryLoading || !userProfile || !user) {
         return (
             <SafeAreaView style={styles.container}>

@@ -106,7 +106,6 @@ export default function HomeScreen() {
 
                 // Get the actual count from database after ending the fast
                 const completedCount = await getCompletedFastsCount();
-                console.log('HomeScreen - Completed fasts count from DB:', completedCount);
                 await checkAndUnlockAchievements(completedCount, plan.fastingHours, user?.currentStreak || 0);
 
                 setIsRunning(false);
@@ -149,12 +148,7 @@ export default function HomeScreen() {
             setTimeRemaining(plan.fastingHours * 60 * 60);
             setIsRunning(true);
 
-            // Check for first fast achievement (when starting, the count is still 0)
-            const completedCount = await getCompletedFastsCount();
-            if (completedCount === 0) {
-                console.log('HomeScreen - Starting first fast, will check achievements after completion');
-                // Don't check achievements here, will check after completion
-            }
+            // Achievements will be checked after completion
 
             Alert.alert(
                 'Fast Started!',
@@ -185,7 +179,6 @@ export default function HomeScreen() {
 
                             // Get the actual count from database after ending the fast
                             const completedCount = await getCompletedFastsCount();
-                            console.log('HomeScreen - Completed fasts count from DB:', completedCount);
                             await checkAndUnlockAchievements(completedCount, plan.fastingHours, user?.currentStreak || 0);
 
                             setIsRunning(false);

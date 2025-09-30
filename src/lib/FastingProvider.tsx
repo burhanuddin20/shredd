@@ -52,13 +52,9 @@ export const FastingProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 getFasts()
             ]);
 
-            // Only log when data actually changes
+            // Track data changes
             const completedFasts = allFasts.filter(f => f.status === 'completed').length;
-            if (allFasts.length !== prevDataRef.current.totalFasts ||
-                completedFasts !== prevDataRef.current.completedFasts) {
-                console.log('FastingProvider - Data updated - Total fasts:', allFasts.length, 'Completed:', completedFasts);
-                prevDataRef.current = { totalFasts: allFasts.length, completedFasts };
-            }
+            prevDataRef.current = { totalFasts: allFasts.length, completedFasts };
 
             setCurrentFast(activeFast);
             setFastHistory(allFasts);
@@ -97,12 +93,10 @@ export const FastingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const endFast = useCallback(async (fastId: number, xpEarned: number): Promise<void> => {
         try {
-            console.log('FastingProvider - Ending fast:', fastId, 'with XP:', xpEarned);
             await updateFastStatus(fastId, 'completed', new Date().toISOString());
             await updateFastXP(fastId, xpEarned);
 
             // Reload data
-            console.log('FastingProvider - Reloading data after ending fast');
             await loadFastData();
         } catch (error) {
             console.error('Failed to end fast:', error);

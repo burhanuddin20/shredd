@@ -49,7 +49,6 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
                 getAchievements()
             ]);
 
-            console.log('UserProfileProvider - Loaded user data - XP:', profile?.totalXP || 0);
             setUserProfile(profile);
             setAchievements(userAchievements);
         } catch (error) {
@@ -64,7 +63,6 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
 
         try {
             const newTotalXP = userProfile.totalXP + xpToAdd;
-            console.log('UserProfileProvider - Adding XP:', xpToAdd, 'New total:', newTotalXP);
             await updateUserXP(newTotalXP);
 
             // Update local state immediately for better UX
@@ -116,17 +114,13 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     };
 
     const checkAndUnlockAchievements = async (totalFasts: number, fastingHours: number, streak: number): Promise<void> => {
-        console.log('Checking achievements for:', { totalFasts, fastingHours, streak });
 
         // Check first fast achievement
         if (totalFasts === 1) {
             const hasFirstFast = await hasAchievement('first_fast');
             if (!hasFirstFast) {
-                console.log('Unlocking achievement: first_fast');
                 await unlockAchievementDb('first_fast');
                 await loadUserData(); // Reload to update achievements
-            } else {
-                console.log('Achievement already unlocked: first_fast');
             }
         }
 
@@ -143,11 +137,8 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
             if (fastingHours >= achievement.hours) {
                 const hasAchievementUnlocked = await hasAchievement(achievement.id);
                 if (!hasAchievementUnlocked) {
-                    console.log(`Unlocking achievement: ${achievement.id}`);
                     await unlockAchievementDb(achievement.id);
                     await loadUserData();
-                } else {
-                    console.log(`Achievement already unlocked: ${achievement.id}`);
                 }
             }
         }
@@ -167,11 +158,8 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
             if (streak >= achievement.days) {
                 const hasAchievementUnlocked = await hasAchievement(achievement.id);
                 if (!hasAchievementUnlocked) {
-                    console.log(`Unlocking achievement: ${achievement.id}`);
                     await unlockAchievementDb(achievement.id);
                     await loadUserData();
-                } else {
-                    console.log(`Achievement already unlocked: ${achievement.id}`);
                 }
             }
         }
@@ -190,18 +178,14 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
             if (totalFasts >= achievement.count) {
                 const hasAchievementUnlocked = await hasAchievement(achievement.id);
                 if (!hasAchievementUnlocked) {
-                    console.log(`Unlocking achievement: ${achievement.id}`);
                     await unlockAchievementDb(achievement.id);
                     await loadUserData();
-                } else {
-                    console.log(`Achievement already unlocked: ${achievement.id}`);
                 }
             }
         }
     };
 
     const refreshUserData = async (): Promise<void> => {
-        console.log('UserProfileProvider - Manually refreshing user data');
         await loadUserData();
     };
 
