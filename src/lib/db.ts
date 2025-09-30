@@ -152,6 +152,24 @@ export const updateFastXP = async (id: number, xpEarned: number): Promise<void> 
   );
 };
 
+export const updateFastTimes = async (id: number, startTime: string, endTime?: string): Promise<void> => {
+  const database = ensureDb();
+  
+  await database.runAsync(
+    'UPDATE fasts SET startTime = ?, endTime = ?, synced = 0 WHERE id = ?',
+    [startTime, endTime || null, id]
+  );
+};
+
+export const deleteFast = async (id: number): Promise<void> => {
+  const database = ensureDb();
+  
+  await database.runAsync(
+    'DELETE FROM fasts WHERE id = ?',
+    [id]
+  );
+};
+
 // Achievement-related functions
 export const unlockAchievement = async (id: string): Promise<void> => {
   const database = ensureDb();

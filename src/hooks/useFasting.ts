@@ -1,9 +1,11 @@
 import { useDatabase } from '@/src/lib/DatabaseProvider';
 import {
     addFast,
+    deleteFast as deleteFastFromDb,
     getActiveFast,
     getFasts,
     updateFastStatus,
+    updateFastTimes,
     updateFastXP,
     type Fast as FastType
 } from '@/src/lib/db';
@@ -107,6 +109,30 @@ export const useFasting = () => {
     }
   };
 
+  const updateFast = async (fastId: number, startTime: string, endTime?: string): Promise<void> => {
+    try {
+      await updateFastTimes(fastId, startTime, endTime);
+      
+      // Reload data
+      await loadFastData();
+    } catch (error) {
+      console.error('Failed to update fast:', error);
+      throw error;
+    }
+  };
+
+  const deleteFast = async (fastId: number): Promise<void> => {
+    try {
+      await deleteFastFromDb(fastId);
+      
+      // Reload data
+      await loadFastData();
+    } catch (error) {
+      console.error('Failed to delete fast:', error);
+      throw error;
+    }
+  };
+
   return {
     currentFast,
     fastHistory,
@@ -116,6 +142,8 @@ export const useFasting = () => {
     pauseFast,
     resumeFast,
     cancelFast,
+    updateFast,
+    deleteFast,
     refreshData: loadFastData,
   };
 };

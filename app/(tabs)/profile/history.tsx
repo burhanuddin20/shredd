@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { FASTING_PLANS, getXPReward } from '@/constants/game';
+import { FASTING_PLANS } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFasting } from '@/src/hooks/useFasting';
@@ -8,7 +8,6 @@ import { Stack } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
-  Dimensions,
   FlatList,
   Modal,
   StyleSheet,
@@ -19,71 +18,38 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const { width } = Dimensions.get('window');
-
-// Mock fast data - in real app this would come from storage/API
-const MOCK_FASTS: Fast[] = [
-  {
-    id: '1',
-    planId: '16:8',
-    startTime: new Date('2024-01-15T20:00:00'),
-    endTime: new Date('2024-01-16T12:00:00'),
-    actualEndTime: new Date('2024-01-16T12:00:00'),
-    status: 'completed',
-    xpEarned: 40,
-    achievements: ['first_fast'],
-  },
-  {
-    id: '2',
-    planId: '18:6',
-    startTime: new Date('2024-01-14T19:00:00'),
-    endTime: new Date('2024-01-15T13:00:00'),
-    actualEndTime: new Date('2024-01-15T13:00:00'),
-    status: 'completed',
-    xpEarned: 60,
-    achievements: ['fast_18h'],
-  },
-  {
-    id: '3',
-    planId: '20:4',
-    startTime: new Date('2024-01-13T18:00:00'),
-    endTime: new Date('2024-01-14T14:00:00'),
-    actualEndTime: new Date('2024-01-14T14:30:00'),
-    status: 'completed',
-    xpEarned: 80,
-    achievements: ['fast_20h'],
-  },
-  {
-    id: '4',
-    planId: '16:8',
-    startTime: new Date('2024-01-12T20:00:00'),
-    endTime: new Date('2024-01-13T12:00:00'),
-    actualEndTime: new Date('2024-01-13T11:30:00'),
-    status: 'cancelled',
-    xpEarned: 0,
-    achievements: [],
-  },
-];
+// Type for display purposes
+interface DisplayFast {
+  id: string;
+  planId: string;
+  startTime: Date;
+  endTime?: Date;
+  actualEndTime?: Date;
+  status: 'completed' | 'cancelled' | 'in-progress' | 'paused';
+  xpEarned: number;
+  achievements: string[];
+}
 
 export default function HistoryScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
   const { isInitialized: dbInitialized } = useDatabase();
-  const { fastHistory, isLoading } = useFasting();
+  const { fastHistory, isLoading, updateFast, deleteFast: deleteFastFromHook } = useFasting();
 
-  const [selectedFast, setSelectedFast] = useState<Fast | null>(null);
+  const [selectedFast, setSelectedFast] = useState<DisplayFast | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
 
   // Convert database fasts to display format
-  const fasts = fastHistory.map(fast => ({
-    ...fast,
+  const fasts: DisplayFast[] = fastHistory.map(fast => ({
     id: fast.id!.toString(),
+    planId: fast.planId,
     startTime: new Date(fast.startTime),
     endTime: fast.endTime ? new Date(fast.endTime) : undefined,
     actualEndTime: fast.endTime ? new Date(fast.endTime) : undefined,
-    status: fast.status as 'completed' | 'cancelled' | 'in-progress',
+    status: fast.status as 'completed' | 'cancelled' | 'in-progress' | 'paused',
+    xpEarned: fast.xpEarned,
     achievements: [], // TODO: Get achievements for each fast
   }));
 
@@ -101,11 +67,12 @@ export default function HistoryScreen() {
     }
   };
 
-  const getStatusIcon = (status: string): string => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return 'checkmark.circle.fill';
       case 'cancelled': return 'xmark.circle.fill';
       case 'in-progress': return 'clock.fill';
+      case 'paused': return 'pause.circle.fill';
       default: return 'circle';
     }
   };
@@ -130,14 +97,14 @@ export default function HistoryScreen() {
     return Math.round(diffMs / (1000 * 60 * 60 * 100) / 10); // Round to 1 decimal place
   };
 
-  const openEditModal = (fast: Fast) => {
+  const openEditModal = (fast: DisplayFast) => {
     setSelectedFast(fast);
     setEditStartTime(formatTime(fast.startTime));
     setEditEndTime(formatTime(fast.actualEndTime || fast.endTime || new Date()));
     setIsEditModalVisible(true);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!selectedFast) return;
 
     try {
@@ -155,21 +122,18 @@ export default function HistoryScreen() {
         newEndTime.setDate(newEndTime.getDate() + 1);
       }
 
-      const duration = calculateDuration(newStartTime, newEndTime);
-      const plan = FASTING_PLANS.find(p => p.id === selectedFast.planId);
-      const newXPEarned = selectedFast.status === 'completed' ? getXPReward(duration) : 0;
+      // Update the fast in the database
+      await updateFast(
+        parseInt(selectedFast.id),
+        newStartTime.toISOString(),
+        newEndTime.toISOString()
+      );
 
-      const updatedFast: Fast = {
-        ...selectedFast,
-        startTime: newStartTime,
-        actualEndTime: newEndTime,
-        xpEarned: newXPEarned,
-      };
-
-      setFasts(prev => prev.map(fast => fast.id === selectedFast.id ? updatedFast : fast));
       setIsEditModalVisible(false);
       setSelectedFast(null);
+      Alert.alert('Success', 'Fast updated successfully');
     } catch (error) {
+      console.error('Error updating fast:', error);
       Alert.alert('Invalid Time', 'Please enter valid time in HH:MM format');
     }
   };
@@ -183,15 +147,21 @@ export default function HistoryScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setFasts(prev => prev.filter(fast => fast.id !== fastId));
+          onPress: async () => {
+            try {
+              await deleteFastFromHook(parseInt(fastId));
+              Alert.alert('Success', 'Fast deleted successfully');
+            } catch (error) {
+              console.error('Error deleting fast:', error);
+              Alert.alert('Error', 'Failed to delete fast');
+            }
           },
         },
       ]
     );
   };
 
-  const renderFastCard = ({ item }: { item: Fast }) => {
+  const renderFastCard = ({ item }: { item: DisplayFast }) => {
     const duration = calculateDuration(
       item.startTime,
       item.actualEndTime || item.endTime || new Date()
@@ -230,7 +200,7 @@ export default function HistoryScreen() {
           </View>
 
           <View style={styles.timeRow}>
-            <IconSymbol name="clock.badge.checkmark.fill" size={16} color={colors.icon} />
+            <IconSymbol name="checkmark.circle.fill" size={16} color={colors.icon} />
             <Text style={[styles.timeLabel, { color: colors.icon }]}>End:</Text>
             <Text style={[styles.timeValue, { color: colors.text }]}>
               {formatTime(item.actualEndTime || item.endTime || new Date())}
