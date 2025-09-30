@@ -26,59 +26,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Mock user data (fallback)
-// const mockUser: UserProfile = {
-//     id: '1',
-//     username: 'trilly',
-//     email: 'scout@corps.com',
-//     profilePicture: 'https://i.pravatar.cc/100',
-//     totalXP: 100,
-//     currentStreak: 5,
-//     longestStreak: 12,
-//     totalFasts: 15,
-//     achievements: ['first_fast', 'fast_16h', 'total_10'],
-//     currentPlan: '16:8',
-//     createdAt: new Date('2024-01-01'),
-// };
 
-// Mock fast history data
-const mockFastHistory = [
-    {
-        id: '1',
-        date: '2024-01-15',
-        duration: '16:30:00',
-        type: '16:8',
-        status: 'Current',
-    },
-    {
-        id: '2',
-        date: '2024-01-14',
-        duration: '18:45:00',
-        type: '18:6',
-        status: 'Completed',
-    },
-    {
-        id: '3',
-        date: '2024-01-13',
-        duration: '12:15:00',
-        type: '16:8',
-        status: 'Cancelled',
-    },
-    {
-        id: '4',
-        date: '2024-01-12',
-        duration: '16:00:00',
-        type: '16:8',
-        status: 'Completed',
-    },
-    {
-        id: '5',
-        date: '2024-01-11',
-        duration: '20:30:00',
-        type: '20:4',
-        status: 'Completed',
-    },
-];
 
 export default function ProfileScreen() {
     const [fontsLoaded] = useFonts({
@@ -94,7 +42,64 @@ export default function ProfileScreen() {
     // Calculate real stats from database
     const { fastHistory } = useFasting();
     const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
-    const longestStreak = 0; // TODO: Calculate from fast history dates
+
+    // Calculate longest streak from fast history
+    const calculateLongestStreak = (fasts: typeof fastHistory): number => {
+        if (fasts.length === 0) return 0;
+
+        const completedFasts = fasts
+            .filter(fast => fast.status === 'completed')
+            .map(fast => new Date(fast.startTime))
+            .sort((a, b) => a.getTime() - b.getTime());
+
+        if (completedFasts.length === 0) return 0;
+
+        let maxStreak = 1;
+        let currentStreak = 1;
+
+        for (let i = 1; i < completedFasts.length; i++) {
+            const prevDate = completedFasts[i - 1];
+            const currDate = completedFasts[i];
+            const diffDays = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                currentStreak++;
+                maxStreak = Math.max(maxStreak, currentStreak);
+            } else {
+                currentStreak = 1;
+            }
+        }
+
+        return maxStreak;
+    };
+
+    const longestStreak = calculateLongestStreak(fastHistory);
+
+    // Format fast history for display
+    const formatFastHistory = (fasts: typeof fastHistory) => {
+        return fasts
+            .filter(fast => fast.status === 'completed' || fast.status === 'cancelled')
+            .map(fast => {
+                const startDate = new Date(fast.startTime);
+                const endDate = fast.endTime ? new Date(fast.endTime) : new Date();
+                const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 100) / 10);
+
+                return {
+                    id: fast.id!.toString(),
+                    date: startDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: '2-digit'
+                    }),
+                    duration: `${duration}h`,
+                    type: fast.planId,
+                    status: fast.status === 'completed' ? 'Completed' : 'Cancelled'
+                };
+            })
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    };
+
+    const formattedFastHistory = formatFastHistory(fastHistory);
 
     // Use database user data only
     const user = userProfile ? {
@@ -247,7 +252,7 @@ export default function ProfileScreen() {
                         </View>
 
                         {/* Table Rows */}
-                        {(showAllHistory ? mockFastHistory : mockFastHistory.slice(0, 3)).map((fast, index, array) => (
+                        {(showAllHistory ? formattedFastHistory : formattedFastHistory.slice(0, 3)).map((fast, index, array) => (
                             <View key={fast.id} style={styles.tableRow}>
                                 <Text style={styles.tableCell}>{fast.date}</Text>
                                 <Text style={styles.tableCell}>{fast.duration}</Text>
@@ -265,13 +270,13 @@ export default function ProfileScreen() {
                             </View>
                         ))}
                     </View>
-                    {mockFastHistory.length > 3 && (
+                    {formattedFastHistory.length > 3 && (
                         <TouchableOpacity
                             style={styles.toggleButton}
                             onPress={() => setShowAllHistory(!showAllHistory)}
                         >
                             <Text style={styles.toggleButtonText}>
-                                {showAllHistory ? 'SHOW LESS' : `SHOW ALL (${mockFastHistory.length})`}
+                                {showAllHistory ? 'SHOW LESS' : `SHOW ALL (${formattedFastHistory.length})`}
                             </Text>
                         </TouchableOpacity>
                     )}
