@@ -66,8 +66,8 @@ const onboardingSteps = [
   {
     id: 5,
     title: 'SQUAD UP',
-    subtitle: 'SHREDD with your friends',
-    description: 'Join a squad and partner with your friends or other users and train together.',
+    subtitle: '🚀 COMING SOON',
+    description: 'Form or join squads with your friends! Compete as a team, battle rival squads, climb global leaderboards, and unlock exclusive squad rewards. Train together, dominate together!',
     icon: 'person.2',
     color: '#6B705C',
   },
@@ -406,7 +406,7 @@ export default function OnboardingScreen() {
           </Text>
 
           <Text style={[styles.subscriptionPrice, { color: colors.accent }]}>
-            then just $2/month
+            then just $4/month
           </Text>
 
           <View style={styles.subscriptionButtons}>
