@@ -99,15 +99,15 @@ export default function LeaderboardScreen() {
                     </View>
                     <View style={styles.featureItem}>
                         <Text style={styles.featureBullet}>🌍</Text>
-                        <Text style={styles.featureText}>Global Competition</Text>
+                        <Text style={styles.featureText}>Global Leaderboards</Text>
                     </View>
                     <View style={styles.featureItem}>
                         <Text style={styles.featureBullet}>🏆</Text>
-                        <Text style={styles.featureText}>Weekly Tournaments</Text>
+                        <Text style={styles.featureText}>Weekly Squad Tournaments</Text>
                     </View>
                     <View style={styles.featureItem}>
                         <Text style={styles.featureBullet}>🎖️</Text>
-                        <Text style={styles.featureText}>Exclusive Rewards</Text>
+                        <Text style={styles.featureText}>Squad Exclusive Rewards</Text>
                     </View>
                 </View>
 
