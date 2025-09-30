@@ -589,7 +589,7 @@ export default function OnboardingScreen() {
               <Text style={[styles.nameFormHint, { color: colors.secondary }]}>
                 This will be your display name in the app (required)
               </Text>
-              
+
               {/* Start Mission Button - only on name entry step */}
               <View style={styles.nameFormButtonContainer}>
                 <MilitaryButton
