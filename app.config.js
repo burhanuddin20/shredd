@@ -6,7 +6,7 @@ export default {
     slug: "shredd",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: "./assets/icons/appstore.png",
     userInterfaceStyle: "automatic",
     scheme: "shredd",
     splash: {
@@ -19,12 +19,14 @@ export default {
     ],
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "com.shredd.fasting"
+      bundleIdentifier: "com.shredd.fasting",
+      icon: "./assets/icons/Assets.xcassets/AppIcon.appiconset/1024.png"
     },
     android: {
+      icon: "./assets/icons/playstore.png",
       adaptiveIcon: {
-        foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundImage: "./assets/images/android-icon-background.png"
+        foregroundImage: "./assets/icons/playstore.png",
+        backgroundColor: "#0B0C0C"
       },
       package: "com.shredd.fasting"
     },
