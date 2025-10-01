@@ -6,6 +6,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { saveUser } from '@/src/lib/db';
+import { revenueCatService } from '@/src/services/revenuecat';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ import {
   View
 } from 'react-native';
 // import Purchases from 'react-native-purchases';
+import PaywallScreen from '@/screens/PaywallScreen';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -99,7 +101,8 @@ export default function OnboardingScreen() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>('16:8'); // Default to 16:8
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSubscription, setShowSubscription] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false); // For legacy subscription overlay
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Get refreshUserData from UserProfileProvider
   const { refreshUserData } = useUserProfile();
@@ -147,7 +150,7 @@ export default function OnboardingScreen() {
       );
       statBadgeOpacity.value = withTiming(1, { duration: 400 });
     }, 400);
-  }, [currentStep]);
+  }, [currentStep, slideOpacity, slideTranslateY, iconScale, iconRotation, statBadgeScale, statBadgeOpacity]);
 
   // Continuous pulse animation for icon
 
@@ -170,7 +173,7 @@ export default function OnboardingScreen() {
       -1,
       true
     );
-  }, [currentStep]);
+  }, [currentStep, iconScale, shimmerOpacity]);
 
   // Validate and sanitize username
   const validateAndSanitizeName = (name: string): string => {
@@ -186,6 +189,8 @@ export default function OnboardingScreen() {
   // const [isSubscribing, setIsSubscribing] = useState(false); // Commented out - not needed for placeholder
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
+
+  // todo should be removed
 
   // Initialize RevenueCat - COMMENTED OUT FOR NOW
   // useEffect(() => {
@@ -261,7 +266,7 @@ export default function OnboardingScreen() {
     }
   };
 
-  const startLoadingSequence = () => {
+  const startLoadingSequence = async () => {
     setIsLoading(true);
 
     // Start continuous haptic feedback to simulate building
@@ -269,14 +274,66 @@ export default function OnboardingScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }, 200); // Light haptic every 200ms
 
-    // Simulate building personalized plan
-    setTimeout(() => {
+    try {
+      // Save user data first
+      const validatedName = validateAndSanitizeName(userName);
+      const finalPlan = selectedPlan || '16:8';
+
+      if (!validatedName || validatedName.trim().length === 0) {
+        throw new Error('Valid name is required');
+      }
+
+      // Save user data to SQLite
+      await saveUser({
+        id: `user_${Date.now()}`,
+        username: validatedName,
+        email: undefined,
+        totalXP: 0,
+        streak: 0,
+        currentPlan: finalPlan,
+        createdAt: new Date().toISOString(),
+        synced: false,
+      });
+
+      // Initialize RevenueCat with user ID
+      await revenueCatService.initialize(`user_${Date.now()}`);
+
+      // Refresh user data in UserProfileProvider
+      await refreshUserData();
+
+      // Check if user is already subscribed
+      const subscriptionStatus = await revenueCatService.checkSubscriptionStatus();
+
       clearInterval(hapticInterval);
-      // Final completion haptic - like construction finishing
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      setShowSubscription(true);
       setIsLoading(false);
-    }, 3000); // 3 seconds of loading animation
+
+      if (subscriptionStatus.isSubscribed) {
+        // User is already subscribed, go to main app
+        router.replace('/(tabs)');
+      } else {
+        // Show paywall
+        setShowPaywall(true);
+      }
+    } catch (error) {
+      clearInterval(hapticInterval);
+      console.error('Failed to complete onboarding:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Failed to complete setup. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  // Handle paywall completion
+  const handlePaywallComplete = () => {
+    setShowPaywall(false);
+    router.replace('/(tabs)');
+  };
+
+  // Handle paywall skip (for testing)
+  const handlePaywallSkip = () => {
+    setShowPaywall(false);
+    router.replace('/(tabs)');
   };
 
   // Handle subscription purchase - COMMENTED OUT FOR NOW
@@ -774,6 +831,14 @@ export default function OnboardingScreen() {
 
       {/* Subscription Overlay */}
       <SubscriptionOverlay />
+
+      {/* Paywall Screen */}
+      {showPaywall && (
+        <PaywallScreen
+          onSubscriptionComplete={handlePaywallComplete}
+          onSkip={handlePaywallSkip}
+        />
+      )}
     </SafeAreaView>
   );
 }
