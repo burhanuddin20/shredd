@@ -8,6 +8,7 @@ export default {
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     userInterfaceStyle: "automatic",
+    scheme: "shredd",
     splash: {
       image: "./assets/images/splash-icon.png",
       resizeMode: "contain",
@@ -37,6 +38,9 @@ export default {
     ],
     experiments: {
       typedRoutes: true
+    },
+    linking: {
+      scheme: "shredd"
     },
     extra: {
       // Environment variables for RevenueCat
