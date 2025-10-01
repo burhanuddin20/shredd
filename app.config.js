@@ -18,7 +18,7 @@ export default {
       "**/*"
     ],
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: "com.shredd.fasting"
     },
     android: {
@@ -43,14 +43,16 @@ export default {
     linking: {
       scheme: "shredd"
     },
-    extra: {
-      // Environment variables for RevenueCat
-      REVENUECAT_IOS_API_KEY: process.env.REVENUECAT_IOS_API_KEY,
-      REVENUECAT_ANDROID_API_KEY: process.env.REVENUECAT_ANDROID_API_KEY,
-      // EAS project configuration
-      eas: {
-        projectId: "8e1eb5c8-0003-4921-b785-8fe974c1eb8e"
-      }
-    }
+       extra: {
+         // Environment variables for RevenueCat
+         REVENUECAT_IOS_API_KEY: process.env.REVENUECAT_IOS_API_KEY,
+         REVENUECAT_ANDROID_API_KEY: process.env.REVENUECAT_ANDROID_API_KEY,
+         // Mock paywall flag
+         USE_MOCK_PAYWALL: process.env.USE_MOCK_PAYWALL ?? 'false',
+         // EAS project configuration
+         eas: {
+           projectId: "8e1eb5c8-0003-4921-b785-8fe974c1eb8e"
+         }
+       }
   }
 };

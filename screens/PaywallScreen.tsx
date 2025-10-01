@@ -2,7 +2,9 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { MilitaryButton } from '@/components/ui/military-button';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { FLAGS } from '@/src/config/flags';
 import { REVENUECAT_CONFIG } from '@/src/config/revenuecat';
+import MockPaywall from '@/src/features/paywall/MockPaywall';
 import {
     PurchasesOffering,
     PurchasesPackage,
@@ -42,6 +44,7 @@ export default function PaywallScreen({
     const [isPurchasing, setIsPurchasing] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
     const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+    const [useMock, setUseMock] = useState(FLAGS.USE_MOCK_PAYWALL);
 
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'dark'];
@@ -53,6 +56,13 @@ export default function PaywallScreen({
     const initializePaywall = async () => {
         try {
             setIsLoading(true);
+
+            // If mock flag is enabled, use mock paywall
+            if (FLAGS.USE_MOCK_PAYWALL) {
+                setUseMock(true);
+                setIsLoading(false);
+                return;
+            }
 
             // Check if user is already subscribed
             const status = await revenueCatService.checkSubscriptionStatus();
@@ -72,8 +82,10 @@ export default function PaywallScreen({
             const current = await revenueCatService.getCurrentOffering();
             setCurrentOffering(current);
 
-            // Auto-select yearly package if available (better value)
-            if (current) {
+            // Check if we have valid offerings
+            if (current && current.availablePackages.length > 0) {
+                setUseMock(false);
+                // Auto-select yearly package if available (better value)
                 const yearlyPackage = current.availablePackages.find(
                     pkg => pkg.packageType === 'ANNUAL'
                 );
@@ -82,11 +94,15 @@ export default function PaywallScreen({
                 );
 
                 setSelectedPackage(yearlyPackage || monthlyPackage || current.availablePackages[0]);
+            } else {
+                // No products returned → fall back to mock
+                setUseMock(true);
             }
 
         } catch (error) {
             console.error('Failed to initialize paywall:', error);
-            Alert.alert('Error', 'Failed to load subscription options. Please try again.');
+            // Network / configuration error → fall back to mock
+            setUseMock(true);
         } finally {
             setIsLoading(false);
         }
@@ -201,6 +217,18 @@ export default function PaywallScreen({
                     />
                 </View>
             </SafeAreaView>
+        );
+    }
+
+    // Mock paywall
+    if (useMock) {
+        return (
+            <MockPaywall
+                onSelectMonthly={() => {/* NO-OP for screenshot */ }}
+                onSelectYearly={() => {/* NO-OP for screenshot */ }}
+                onRestore={() => {/* NO-OP */ }}
+                onClose={handleSkip}
+            />
         );
     }
 

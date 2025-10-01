@@ -589,6 +589,16 @@ export default function OnboardingScreen() {
 
   const currentStepData = onboardingSteps[currentStep];
 
+  // If paywall should be shown, render it as a full screen replacement
+  if (showPaywall) {
+    return (
+      <PaywallScreen
+        onSubscriptionComplete={handlePaywallComplete}
+        onSkip={handlePaywallSkip}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Only show tap areas when not on plan selection or name entry steps */}
@@ -831,14 +841,6 @@ export default function OnboardingScreen() {
 
       {/* Subscription Overlay */}
       <SubscriptionOverlay />
-
-      {/* Paywall Screen */}
-      {showPaywall && (
-        <PaywallScreen
-          onSubscriptionComplete={handlePaywallComplete}
-          onSkip={handlePaywallSkip}
-        />
-      )}
     </SafeAreaView>
   );
 }
