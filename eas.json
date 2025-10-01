@@ -6,6 +6,31 @@
       "release": {
         "ios": {
           "distribution": "internal"
+        },
+        "android": {
+          "gradleCommand": ":app:bundleRelease"
+        }
+      },
+      "development": {
+        "developmentClient": true,
+        "distribution": "internal",
+        "ios": {
+          "simulator": false
+        },
+        "android": {
+          "gradleCommand": ":app:assembleDebug"
+        }
+      }
+    },
+    "submit": {
+      "release": {
+        "ios": {
+          "appleId": "YOUR_APPLE_ID_EMAIL",
+          "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID"
+        },
+        "android": {
+          "serviceAccountKeyPath": "./google-service-account.json",
+          "track": "internal"
         }
       }
     }
