@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useDatabase } from './DatabaseProvider';
-import { Achievement, getAchievements, getUser, hasAchievement, unlockAchievement as unlockAchievementDb, updateUserStreak, updateUserXP, UserProfile } from './db';
+import { Achievement, getAchievements, getUser, hasAchievement, unlockAchievement as unlockAchievementDb, updateUserProfile as updateUserProfileDb, updateUserStreak, updateUserXP, UserProfile } from './db';
 
 interface UserProfileContextType {
     userProfile: UserProfile | null;
@@ -105,7 +105,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
 
     const updateUserProfile = async (updates: Partial<UserProfile>): Promise<void> => {
         try {
-            await updateUserProfile(updates);
+            await updateUserProfileDb(updates);
             await loadUserData();
         } catch (error) {
             console.error('Failed to update user profile:', error);
