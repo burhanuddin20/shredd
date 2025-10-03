@@ -39,7 +39,7 @@ export default function HomeScreen() {
 
     // Database hooks
     const { isInitialized: dbInitialized } = useDatabase();
-    const { currentFast, startFast, endFast, isLoading: fastingLoading } = useFasting();
+    const { currentFast, startFast, endFast, cancelFast, isLoading: fastingLoading } = useFasting();
     const { userProfile, achievements, addXP, checkAndUnlockAchievements, updateUserProfile, isLoading: profileLoading } = useUserProfile();
 
     // Local timer state
@@ -131,7 +131,7 @@ export default function HomeScreen() {
                 await endFast(currentFast.id!, xpEarned);
                 await addXP(xpEarned);
 
-                // Get the actual count from database after ending the fast
+                // Get the actual count from database after completing the fast
                 const completedCount = await getCompletedFastsCount();
                 await checkAndUnlockAchievements(completedCount, plan.fastingHours, user?.currentStreak || 0);
 
@@ -201,25 +201,29 @@ export default function HomeScreen() {
                             const progress = totalSeconds > 0 ? (totalSeconds - timeRemaining) / totalSeconds : 0;
                             const xpEarned = Math.floor(getXPReward(plan.fastingHours) * progress);
 
-                            await endFast(currentFast.id!, xpEarned);
-                            await addXP(xpEarned);
-
-                            // Get the actual count from database after ending the fast
-                            const completedCount = await getCompletedFastsCount();
-                            await checkAndUnlockAchievements(completedCount, plan.fastingHours, user?.currentStreak || 0);
-
-                            setIsRunning(false);
-                            setTimeRemaining(0);
-
                             if (xpEarned > 0) {
+                                // Fast was completed - use endFast
+                                await endFast(currentFast.id!, xpEarned);
+                                await addXP(xpEarned);
+
+                                // Get the actual count from database after completing the fast
+                                const completedCount = await getCompletedFastsCount();
+                                await checkAndUnlockAchievements(completedCount, plan.fastingHours, user?.currentStreak || 0);
+
                                 Alert.alert('Fast Ended', `You earned ${xpEarned} XP for your progress.`, [
                                     { text: 'OK' },
                                 ]);
                             } else {
-                                Alert.alert('Fast Ended', 'Fast ended early - no XP earned.', [
+                                // Fast was ended early - use cancelFast (no XP, no achievements)
+                                await cancelFast(currentFast.id!);
+
+                                Alert.alert('Fast Cancelled', 'Fast ended early - no XP earned.', [
                                     { text: 'OK' },
                                 ]);
                             }
+
+                            setIsRunning(false);
+                            setTimeRemaining(0);
                         } catch (error) {
                             console.error('Failed to end fast:', error);
                             Alert.alert('Error', 'Failed to end fast. Please try again.');

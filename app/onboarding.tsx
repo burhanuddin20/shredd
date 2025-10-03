@@ -790,12 +790,12 @@ export default function OnboardingScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
                 placeholder="Your name (required, max 10 chars)"
-                placeholderTextColor={colors.secondary}
+                placeholderTextColor={colors.accentSecondary}
                 autoCapitalize="words"
                 autoCorrect={false}
                 maxLength={10}
               />
-              <Text style={[styles.nameFormHint, { color: colors.secondary }]}>
+              <Text style={[styles.nameFormHint, { color: colors.accentSecondary }]}>
                 This will be your display name in the app (required)
               </Text>
 
