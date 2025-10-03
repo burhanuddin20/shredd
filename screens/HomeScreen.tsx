@@ -56,6 +56,33 @@ export default function HomeScreen() {
         }
     }, [userProfile?.currentPlan]);
 
+    // Restore timer state when currentFast changes (app restart)
+    useEffect(() => {
+        if (currentFast && plan) {
+            // Calculate remaining time based on when the fast started
+            const startTime = new Date(currentFast.startTime);
+            const now = new Date();
+            const elapsedSeconds = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+            const remainingSeconds = totalSeconds - elapsedSeconds;
+
+            if (remainingSeconds > 0) {
+                // Fast is still active
+                setTimeRemaining(remainingSeconds);
+                setIsRunning(true);
+            } else {
+                // Fast should have completed
+                setTimeRemaining(0);
+                setIsRunning(false);
+                // Auto-complete the fast
+                completeFast();
+            }
+        } else {
+            // No active fast
+            setTimeRemaining(0);
+            setIsRunning(false);
+        }
+    }, [currentFast, plan, totalSeconds, completeFast]);
+
     // Calculate real stats from database
     const { fastHistory } = useFasting();
     const totalFasts = fastHistory.filter(fast => fast.status === 'completed').length;
@@ -294,13 +321,13 @@ export default function HomeScreen() {
                     </View>
                 </View>
 
-                
-                  {/* Leaderboard Section */}
+
+                {/* Leaderboard Section */}
                 {/* <View style={styles.leaderboardSection}> */}
-                    {/* <Text style={styles.leaderboardLabel}>LEADERBOARD</Text> */}
-                    {/* <Text style={styles.leaderboardPosition}></Text> */}
+                {/* <Text style={styles.leaderboardLabel}>LEADERBOARD</Text> */}
+                {/* <Text style={styles.leaderboardPosition}></Text> */}
                 {/* </View> */}
-        
+
                 <View style={styles.leaderboardSection}>
                     <Text style={styles.leaderboardLabel}>TOTAL FASTS</Text>
                     <Text style={styles.leaderboardPosition}>{totalFasts}</Text>
