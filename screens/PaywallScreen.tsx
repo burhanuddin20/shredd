@@ -57,8 +57,8 @@ export default function PaywallScreen({
         try {
             setIsLoading(true);
 
-            // If mock flag is enabled, use mock paywall
-            if (FLAGS.USE_MOCK_PAYWALL) {
+            // If mock flag is enabled OR RevenueCat is disabled, use mock paywall
+            if (FLAGS.USE_MOCK_PAYWALL || !FLAGS.ENABLE_REVENUECAT) {
                 setUseMock(true);
                 setIsLoading(false);
                 return;

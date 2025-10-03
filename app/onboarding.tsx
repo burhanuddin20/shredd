@@ -4,6 +4,7 @@ import { MilitaryButton } from '@/components/ui/military-button';
 import { FASTING_PLANS } from '@/constants/game';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { FLAGS } from '@/src/config/flags';
 import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { saveUser } from '@/src/lib/db';
 import { revenueCatService } from '@/src/services/revenuecat';
@@ -295,24 +296,30 @@ export default function OnboardingScreen() {
         synced: false,
       });
 
-      // Initialize RevenueCat with user ID
-      await revenueCatService.initialize(`user_${Date.now()}`);
-
       // Refresh user data in UserProfileProvider
       await refreshUserData();
-
-      // Check if user is already subscribed
-      const subscriptionStatus = await revenueCatService.checkSubscriptionStatus();
 
       clearInterval(hapticInterval);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       setIsLoading(false);
 
-      if (subscriptionStatus.isSubscribed) {
-        // User is already subscribed, go to main app
-        router.replace('/(tabs)');
+      // Check if RevenueCat is enabled
+      if (FLAGS.ENABLE_REVENUECAT) {
+        // Initialize RevenueCat with user ID
+        await revenueCatService.initialize(`user_${Date.now()}`);
+
+        // Check if user is already subscribed
+        const subscriptionStatus = await revenueCatService.checkSubscriptionStatus();
+
+        if (subscriptionStatus.isSubscribed) {
+          // User is already subscribed, go to main app
+          router.replace('/(tabs)');
+        } else {
+          // Show paywall
+          setShowPaywall(true);
+        }
       } else {
-        // Show paywall
+        // RevenueCat disabled - go directly to paywall (which will show mock)
         setShowPaywall(true);
       }
     } catch (error) {
