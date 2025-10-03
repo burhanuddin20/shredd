@@ -10,7 +10,7 @@ interface UserProfileContextType {
     updateStreak: (newStreak: number) => Promise<void>;
     unlockAchievement: (achievementId: string) => Promise<void>;
     updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
-    checkAndUnlockAchievements: (totalFasts: number, fastingHours: number, streak: number) => Promise<void>;
+    checkAndUnlockAchievements: (totalFasts: number, fastingHours: number, streak: number, isCompletedFast?: boolean) => Promise<void>;
     refreshUserData: () => Promise<void>;
 }
 
@@ -113,7 +113,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
         }
     };
 
-    const checkAndUnlockAchievements = async (totalFasts: number, fastingHours: number, streak: number): Promise<void> => {
+    const checkAndUnlockAchievements = async (totalFasts: number, fastingHours: number, streak: number, isCompletedFast: boolean = true): Promise<void> => {
 
         // Check first fast achievement
         if (totalFasts === 1) {
@@ -124,21 +124,23 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
             }
         }
 
-        // Check fasting duration achievements
-        const durationAchievements = [
-            { hours: 12, id: 'fast_12h' },
-            { hours: 16, id: 'fast_16h' },
-            { hours: 18, id: 'fast_18h' },
-            { hours: 20, id: 'fast_20h' },
-            { hours: 24, id: 'fast_24h' },
-        ];
+        // Check fasting duration achievements - only for completed fasts
+        if (isCompletedFast) {
+            const durationAchievements = [
+                { hours: 12, id: 'fast_12h' },
+                { hours: 16, id: 'fast_16h' },
+                { hours: 18, id: 'fast_18h' },
+                { hours: 20, id: 'fast_20h' },
+                { hours: 24, id: 'fast_24h' },
+            ];
 
-        for (const achievement of durationAchievements) {
-            if (fastingHours >= achievement.hours) {
-                const hasAchievementUnlocked = await hasAchievement(achievement.id);
-                if (!hasAchievementUnlocked) {
-                    await unlockAchievementDb(achievement.id);
-                    await loadUserData();
+            for (const achievement of durationAchievements) {
+                if (fastingHours >= achievement.hours) {
+                    const hasAchievementUnlocked = await hasAchievement(achievement.id);
+                    if (!hasAchievementUnlocked) {
+                        await unlockAchievementDb(achievement.id);
+                        await loadUserData();
+                    }
                 }
             }
         }
