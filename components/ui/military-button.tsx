@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import React from 'react';
-import { StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
 
 interface MilitaryButtonProps {
   title: string;
@@ -9,6 +9,7 @@ interface MilitaryButtonProps {
   variant?: 'primary' | 'secondary' | 'danger' | 'success';
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
+  loading?: boolean; // Add loading prop
   style?: ViewStyle;
   textStyle?: TextStyle;
 }
@@ -19,6 +20,7 @@ export const MilitaryButton: React.FC<MilitaryButtonProps> = ({
   variant = 'primary',
   size = 'medium',
   disabled = false,
+  loading = false, // Default to false
   style,
   textStyle,
 }) => {
@@ -86,29 +88,33 @@ export const MilitaryButton: React.FC<MilitaryButtonProps> = ({
       style={[
         styles.button,
         {
-          backgroundColor: disabled ? colors.border : buttonColors.backgroundColor,
+          backgroundColor: (disabled || loading) ? colors.border : buttonColors.backgroundColor, // Disable background if loading
           paddingHorizontal: buttonSize.paddingHorizontal,
           paddingVertical: buttonSize.paddingVertical,
         },
         style,
       ]}
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading} // Disable button if loading
       activeOpacity={0.8}
     >
-      <Text
-        style={[
-          styles.buttonText,
-          {
-            color: disabled ? colors.icon : buttonColors.textColor,
-            fontSize: buttonSize.fontSize,
-            fontFamily: 'military',
-          },
-          textStyle,
-        ]}
-      >
-        {title.toUpperCase()}
-      </Text>
+      {loading ? (
+        <ActivityIndicator color={disabled ? colors.icon : buttonColors.textColor} />
+      ) : (
+        <Text
+          style={[
+            styles.buttonText,
+            {
+              color: disabled ? colors.icon : buttonColors.textColor,
+              fontSize: buttonSize.fontSize,
+              fontFamily: 'military',
+            },
+            textStyle,
+          ]}
+        >
+          {title.toUpperCase()}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 };

@@ -101,8 +101,8 @@ export default function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedPlan, setSelectedPlan] = useState<string | null>('16:8'); // Default to 16:8
   const [userName, setUserName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSubscription, setShowSubscription] = useState(false); // For legacy subscription overlay
+  const [isLoading, setIsLoading] = useState(false); // Controls the animation for 'Preparing Plan'
+  const [isSubmitting, setIsSubmitting] = useState(false); // Prevents multiple submissions
   const [showPaywall, setShowPaywall] = useState(false);
 
   // Get refreshUserData from UserProfileProvider
@@ -191,28 +191,6 @@ export default function OnboardingScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
 
-  // todo should be removed
-
-  // Initialize RevenueCat - COMMENTED OUT FOR NOW
-  // useEffect(() => {
-  //   const initializeRevenueCat = async () => {
-  //     try {
-  //       // TODO: Replace with your actual RevenueCat API key
-  //       await Purchases.configure({
-  //         apiKey: 'your_revenue_cat_api_key_here', // iOS/Android
-  //       });
-
-  //       // Set user ID if needed
-  //       if (userName.trim()) {
-  //         await Purchases.logIn(userName.trim());
-  //       }
-  //     } catch (error) {
-  //       console.error('RevenueCat initialization failed:', error);
-  //     }
-  //   };
-
-  //   initializeRevenueCat();
-  // }, [userName]);
 
   // Animated styles
   const slideAnimatedStyle = useAnimatedStyle(() => ({
@@ -237,6 +215,9 @@ export default function OnboardingScreen() {
   }));
 
   const nextStep = () => {
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
     // Medium haptic feedback for navigation - more satisfying
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -268,7 +249,8 @@ export default function OnboardingScreen() {
   };
 
   const startLoadingSequence = async () => {
-    setIsLoading(true);
+    setIsLoading(true); // Start animation
+    setIsSubmitting(true); // Prevent multiple submissions
 
     // Start continuous haptic feedback to simulate building
     const hapticInterval = setInterval(() => {
@@ -299,104 +281,59 @@ export default function OnboardingScreen() {
       // Refresh user data in UserProfileProvider
       await refreshUserData();
 
+      // Keep loading animation for 2 seconds before proceeding to RevenueCat/Paywall
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       clearInterval(hapticInterval);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      setIsLoading(false);
+      setIsLoading(false); // Stop animation after delay
 
       // Check if RevenueCat is enabled
       if (FLAGS.ENABLE_REVENUECAT) {
-        // Initialize RevenueCat with user ID
-        await revenueCatService.initialize(`user_${Date.now()}`);
+        console.log('[Onboarding] Initializing RevenueCat...');
+        await revenueCatService.initialize(`user_${Date.now()}`); // Use new user ID for RevenueCat
 
-        // Check if user is already subscribed
+        console.log('[Onboarding] Checking subscription status...');
         const subscriptionStatus = await revenueCatService.checkSubscriptionStatus();
 
         if (subscriptionStatus.isSubscribed) {
-          // User is already subscribed, go to main app
+          console.log('[Onboarding] User already subscribed, navigating to main app.');
           router.replace('/(tabs)');
         } else {
-          // Show paywall
-          setShowPaywall(true);
+          console.log('[Onboarding] User not subscribed, showing paywall.');
+          setShowPaywall(true); // This will render PaywallScreen
         }
       } else {
-        // RevenueCat disabled - go directly to paywall (which will show mock)
-        setShowPaywall(true);
+        console.log('[Onboarding] RevenueCat disabled, showing mock paywall.');
+        setShowPaywall(true); // RevenueCat disabled - go directly to paywall (which will show mock)
       }
     } catch (error) {
       clearInterval(hapticInterval);
-      console.error('Failed to complete onboarding:', error);
+      console.error('[Onboarding] Failed to complete onboarding:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Failed to complete setup. Please try again.');
-      setIsLoading(false);
+      setIsLoading(false); // Stop animation on error
+      setIsSubmitting(false); // Allow resubmission on error
     }
   };
 
   // Handle paywall completion
   const handlePaywallComplete = () => {
+    console.log('[Onboarding] Paywall completed, navigating to main app.');
     setShowPaywall(false);
+    setIsLoading(false); // Stop animation after paywall
+    setIsSubmitting(false); // Allow new submissions after paywall
     router.replace('/(tabs)');
   };
 
   // Handle paywall skip (for testing)
   const handlePaywallSkip = () => {
+    console.log('[Onboarding] Paywall skipped, navigating to main app.');
     setShowPaywall(false);
+    setIsLoading(false); // Stop animation after paywall
+    setIsSubmitting(false); // Allow new submissions after paywall
     router.replace('/(tabs)');
   };
-
-  // Handle subscription purchase - COMMENTED OUT FOR NOW
-  // const handleStartFreeTrial = async () => {
-  //   setIsSubscribing(true);
-
-  //   try {
-  //     // Haptic feedback for subscription start
-  //     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-  //     // TODO: Replace with your actual product ID in RevenueCat dashboard
-
-  //     // Check if user is eligible for free trial
-  //     const offerings = await Purchases.getOfferings();
-  //     const monthlyOffering = offerings.current?.monthly;
-
-  //     if (monthlyOffering) {
-  //       // Start the subscription with free trial
-  //       const purchaseResult = await Purchases.purchasePackage(monthlyOffering);
-
-  //       if (purchaseResult.customerInfo.entitlements.active['premium']) {
-  //         // Subscription successful
-  //         console.log('Subscription successful:', purchaseResult);
-
-  //         // Success haptic
-  //         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-  //         // Save user data
-  //         console.log('User:', userName, 'Plan:', selectedPlan);
-
-  //         // Navigate to main app
-  //         router.replace('/(tabs)');
-  //       } else {
-  //         throw new Error('Subscription not active');
-  //       }
-  //     } else {
-  //       throw new Error('Monthly offering not available');
-  //     }
-  //   } catch (error: any) {
-  //     console.error('Subscription failed:', error);
-
-  //     // Error haptic
-  //     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
-  //     // Handle different error types
-  //     if (error.code === 'PURCHASES_ERROR_PRODUCT_NOT_AVAILABLE_FOR_PURCHASE') {
-  //       console.log('Product not available for purchase');
-  //     } else if (error.code === 'PURCHASES_ERROR_PAYMENT_PENDING') {
-  //       console.log('Payment pending');
-  //     } else {
-  //       console.log('Subscription error:', error.message);
-  //     }
-  //   } finally {
-  //     setIsSubscribing(false);
-  //   }
-  // };
 
   // Temporary placeholder function for subscription
   const handleStartFreeTrial = async () => {
@@ -443,13 +380,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  // Legacy function - keeping for potential future use
-  // const handleSubscriptionComplete = () => {
-  //   setShowSubscription(false);
-  //   // TODO: Save selected plan to user preferences
-  //   router.replace('/(tabs)');
-  // };
-
   // Loading Screen Component
   const LoadingScreen = () => {
     const pulseScale = useSharedValue(1);
@@ -486,7 +416,7 @@ export default function OnboardingScreen() {
         // Text fade in
         textOpacity.value = withTiming(1, { duration: 500 });
       }
-    }, [pulseScale, rotationValue, textOpacity]);
+    }, [pulseScale, rotationValue, textOpacity, isLoading]); // Add isLoading to dependencies
 
     const animatedPulseStyle = useAnimatedStyle(() => ({
       transform: [{ scale: pulseScale.value }],
@@ -511,6 +441,7 @@ export default function OnboardingScreen() {
             </Animated.View>
           </Animated.View>
 
+          {/* todo do this for 2 seconds and then show the subscription overlay */}
           <Animated.View style={animatedTextStyle}>
             <Text style={[styles.loadingTitle, { color: colors.beige }]}>
               BUILDING PERSONALISED PLAN
@@ -540,7 +471,7 @@ export default function OnboardingScreen() {
         );
         opacityValue.value = withTiming(1, { duration: 400 });
       }
-    }, [scaleValue, opacityValue]);
+    }, [scaleValue, opacityValue, showSubscription]); // Add showSubscription to dependencies
 
     const animatedStyle = useAnimatedStyle(() => ({
       transform: [{ scale: scaleValue.value }],
@@ -548,39 +479,6 @@ export default function OnboardingScreen() {
     }));
 
     if (!showSubscription) return null;
-
-    return (
-      <View style={styles.subscriptionOverlay}>
-        <Animated.View style={[styles.subscriptionContent, animatedStyle]}>
-          <View style={styles.giftContainer}>
-            <IconSymbol name="gift" size={80} color={colors.warning} />
-          </View>
-
-          <Text style={[styles.subscriptionTitle, { color: colors.beige }]}>
-            FREE GIFT!
-          </Text>
-
-          <Text style={[styles.subscriptionSubtitle, { color: colors.accent }]}>
-            7-Day Free Trial
-          </Text>
-
-          <Text style={[styles.subscriptionPrice, { color: colors.accent }]}>
-            then just $4/month
-          </Text>
-
-          <View style={styles.subscriptionButtons}>
-            <TouchableOpacity
-              style={[styles.startTrialButton, { backgroundColor: colors.accent }]}
-              onPress={handleStartFreeTrial}
-            >
-              <Text style={[styles.startTrialText, { color: colors.background }]}>
-                START FREE TRIAL
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </View>
-    );
   };
 
   const prevStep = () => {
@@ -596,12 +494,10 @@ export default function OnboardingScreen() {
 
   const currentStepData = onboardingSteps[currentStep];
 
-  // If paywall should be shown, render it as a full screen replacement
   if (showPaywall) {
     return (
       <PaywallScreen
         onSubscriptionComplete={handlePaywallComplete}
-        onSkip={handlePaywallSkip}
       />
     );
   }
@@ -609,13 +505,13 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Only show tap areas when not on plan selection or name entry steps */}
-      {currentStep !== 5 && currentStep !== 6 && (
+      {currentStep !== 5 && currentStep !== 6 && !isSubmitting && (
         <View style={styles.tapAreas}>
           {/* Left tap area for going back */}
           <TouchableOpacity
             style={styles.leftTapArea}
             onPress={prevStep}
-            disabled={currentStep === 0}
+            disabled={currentStep === 0 || isSubmitting}
           />
 
           {/* Right tap area for going forward */}
@@ -630,11 +526,12 @@ export default function OnboardingScreen() {
                 nextStep();
               }
             }}
+            disabled={isSubmitting}
           />
         </View>
       )}
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} scrollEnabled={!isSubmitting}>
         {/* Hero Section for first step with animation */}
         {currentStep === 0 && (
           <Animated.View style={[styles.heroSection, slideAnimatedStyle]}>
@@ -740,6 +637,7 @@ export default function OnboardingScreen() {
                     selectedPlan === plan.id && styles.selectedPlanCard,
                     { borderColor: selectedPlan === plan.id ? colors.accent : colors.border }
                   ]}
+                  disabled={isSubmitting}
                 >
                   <View style={styles.planCardContent}>
                     <View style={styles.planInfo}>
@@ -794,6 +692,7 @@ export default function OnboardingScreen() {
                 autoCapitalize="words"
                 autoCorrect={false}
                 maxLength={10}
+                editable={!isSubmitting} // Disable input during submission
               />
               <Text style={[styles.nameFormHint, { color: colors.accentSecondary }]}>
                 This will be your display name in the app (required)
@@ -806,6 +705,8 @@ export default function OnboardingScreen() {
                   onPress={nextStep}
                   variant={!userName.trim() ? "secondary" : "primary"}
                   size="medium"
+                  disabled={isSubmitting || !userName.trim()} // Disable during submission or if name is empty
+                  loading={isSubmitting} // Show loading state on button
                 />
               </View>
             </View>
@@ -821,6 +722,7 @@ export default function OnboardingScreen() {
                 onPress={prevStep}
                 variant="secondary"
                 size="medium"
+                disabled={isSubmitting}
               />
             )}
           </View>
@@ -837,6 +739,8 @@ export default function OnboardingScreen() {
                     : "primary"
                 }
                 size="medium"
+                disabled={isSubmitting || (currentStep === 5 && !selectedPlan)} // Disable during submission or if plan not selected
+                loading={isSubmitting} // Show loading state on button if applicable
               />
             </View>
           )}
@@ -845,9 +749,6 @@ export default function OnboardingScreen() {
 
       {/* Loading Overlay */}
       <LoadingScreen />
-
-      {/* Subscription Overlay */}
-      <SubscriptionOverlay />
     </SafeAreaView>
   );
 }
@@ -981,7 +882,6 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 14,
     fontWeight: 'bold',
-    textAlign: 'center',
     letterSpacing: 1,
     textTransform: 'uppercase',
     fontFamily: 'military',
