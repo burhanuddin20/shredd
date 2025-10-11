@@ -335,152 +335,6 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)');
   };
 
-  // Temporary placeholder function for subscription
-  const handleStartFreeTrial = async () => {
-    try {
-      // Haptic feedback
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      // Validate and sanitize the username
-      const validatedName = validateAndSanitizeName(userName);
-      const finalPlan = selectedPlan || '16:8'; // Default plan if none selected
-
-      // Ensure we have a valid name
-      if (!validatedName || validatedName.trim().length === 0) {
-        throw new Error('Valid name is required');
-      }
-
-      // Save user data to SQLite
-      await saveUser({
-        id: `user_${Date.now()}`, // Generate unique user ID
-        username: validatedName,
-        email: undefined, // No email collected in onboarding
-        totalXP: 0,
-        streak: 0,
-        currentPlan: finalPlan,
-        createdAt: new Date().toISOString(),
-        synced: false,
-      });
-
-      // Log user data
-      console.log('User saved to database:', validatedName, 'Plan:', finalPlan);
-
-      // Refresh user data in UserProfileProvider
-      await refreshUserData();
-
-      // Success haptic
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      // Navigate to main app (bypassing subscription for now)
-      router.replace('/(tabs)');
-    } catch (error) {
-      console.error('Failed to save user data:', error);
-      // Still navigate even if save fails
-      router.replace('/(tabs)');
-    }
-  };
-
-  // Loading Screen Component
-  const LoadingScreen = () => {
-    const pulseScale = useSharedValue(1);
-    const rotationValue = useSharedValue(0);
-    const textOpacity = useSharedValue(0);
-
-    useEffect(() => {
-      if (isLoading) {
-        // Strong haptic feedback on start - like construction beginning
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-
-        // Medium haptic after 500ms - like machinery starting
-        setTimeout(() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        }, 500);
-
-        // Pulse animation
-        pulseScale.value = withRepeat(
-          withSequence(
-            withTiming(1.2, { duration: 800 }),
-            withTiming(1, { duration: 800 })
-          ),
-          -1,
-          false
-        );
-
-        // Rotation animation
-        rotationValue.value = withRepeat(
-          withTiming(360, { duration: 2000 }),
-          -1,
-          false
-        );
-
-        // Text fade in
-        textOpacity.value = withTiming(1, { duration: 500 });
-      }
-    }, [pulseScale, rotationValue, textOpacity, isLoading]); // Add isLoading to dependencies
-
-    const animatedPulseStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: pulseScale.value }],
-    }));
-
-    const animatedRotationStyle = useAnimatedStyle(() => ({
-      transform: [{ rotate: `${rotationValue.value}deg` }],
-    }));
-
-    const animatedTextStyle = useAnimatedStyle(() => ({
-      opacity: textOpacity.value,
-    }));
-
-    if (!isLoading) return null;
-
-    return (
-      <View style={styles.loadingOverlay}>
-        <View style={styles.loadingContent}>
-          <Animated.View style={[styles.loadingIconContainer, animatedPulseStyle]}>
-            <Animated.View style={animatedRotationStyle}>
-              <IconSymbol name="gearshape" size={60} color={colors.accent} />
-            </Animated.View>
-          </Animated.View>
-
-          {/* todo do this for 2 seconds and then show the subscription overlay */}
-          <Animated.View style={animatedTextStyle}>
-            <Text style={[styles.loadingTitle, { color: colors.beige }]}>
-              BUILDING PERSONALISED PLAN
-            </Text>
-            <Text style={[styles.loadingSubtitle, { color: colors.accent }]}>
-              Starting Mission...
-            </Text>
-          </Animated.View>
-        </View>
-      </View>
-    );
-  };
-
-  // Subscription Overlay Component
-  const SubscriptionOverlay = () => {
-    const scaleValue = useSharedValue(0);
-    const opacityValue = useSharedValue(0);
-
-    useEffect(() => {
-      if (showSubscription) {
-        // Haptic feedback for gift
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        scaleValue.value = withSequence(
-          withTiming(1.1, { duration: 300 }),
-          withTiming(1, { duration: 200 })
-        );
-        opacityValue.value = withTiming(1, { duration: 400 });
-      }
-    }, [scaleValue, opacityValue, showSubscription]); // Add showSubscription to dependencies
-
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scaleValue.value }],
-      opacity: opacityValue.value,
-    }));
-
-    if (!showSubscription) return null;
-  };
-
   const prevStep = () => {
     // Haptic feedback for navigation
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -494,10 +348,12 @@ export default function OnboardingScreen() {
 
   const currentStepData = onboardingSteps[currentStep];
 
+  // If paywall should be shown, render it as a full screen replacement
   if (showPaywall) {
     return (
       <PaywallScreen
         onSubscriptionComplete={handlePaywallComplete}
+        onSkip={handlePaywallSkip}
       />
     );
   }
@@ -748,10 +604,88 @@ export default function OnboardingScreen() {
       </ScrollView>
 
       {/* Loading Overlay */}
-      <LoadingScreen />
+      <LoadingScreen isLoading={isLoading} colors={colors} />
     </SafeAreaView>
   );
 }
+
+interface LoadingScreenProps {
+  isLoading: boolean;
+  colors: typeof Colors['light'];
+}
+
+const LoadingScreen = ({ isLoading, colors }: LoadingScreenProps) => {
+  const pulseScale = useSharedValue(1);
+  const rotationValue = useSharedValue(0);
+  const textOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (isLoading) {
+      // Strong haptic feedback on start - like construction beginning
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+      // Medium haptic after 500ms - like machinery starting
+      setTimeout(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }, 500);
+
+      // Pulse animation
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.2, { duration: 800 }),
+          withTiming(1, { duration: 800 })
+        ),
+        -1,
+        false
+      );
+
+      // Rotation animation
+      rotationValue.value = withRepeat(
+        withTiming(360, { duration: 2000 }),
+        -1,
+        false
+      );
+
+      // Text fade in
+      textOpacity.value = withTiming(1, { duration: 500 });
+    }
+  }, [pulseScale, rotationValue, textOpacity, isLoading]);
+
+  const animatedPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+  }));
+
+  const animatedRotationStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotationValue.value}deg` }],
+  }));
+
+  const animatedTextStyle = useAnimatedStyle(() => ({
+    opacity: textOpacity.value,
+  }));
+
+  if (!isLoading) return null;
+
+  return (
+    <View style={styles.loadingOverlay}>
+      <View style={styles.loadingContent}>
+        <Animated.View style={[styles.loadingIconContainer, animatedPulseStyle]}>
+          <Animated.View style={animatedRotationStyle}>
+            <IconSymbol name="gearshape" size={60} color={colors.accent} />
+          </Animated.View>
+        </Animated.View>
+
+        <Animated.View style={animatedTextStyle}>
+          <Text style={[styles.loadingTitle, { color: colors.beige }]}>
+            BUILDING PERSONALISED PLAN
+          </Text>
+          <Text style={[styles.loadingSubtitle, { color: colors.accent }]}>
+            Starting Mission...
+          </Text>
+        </Animated.View>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -1049,69 +983,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 1,
     fontFamily: 'body',
-  },
-  // Subscription Overlay Styles
-  subscriptionOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(11, 12, 12, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1001,
-  },
-  subscriptionContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  giftContainer: {
-    marginBottom: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  subscriptionTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    letterSpacing: 3,
-    fontFamily: 'military',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  subscriptionSubtitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    letterSpacing: 1,
-    fontFamily: 'military',
-    marginBottom: 8,
-  },
-  subscriptionPrice: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    fontFamily: 'body',
-    marginBottom: 30,
-  },
-  subscriptionButtons: {
-    width: '100%',
-  },
-  startTrialButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  startTrialText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    fontFamily: 'military',
-    textTransform: 'uppercase',
   },
 });
