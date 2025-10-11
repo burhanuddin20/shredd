@@ -37,7 +37,6 @@ export default function PaywallScreen({
     onSubscriptionComplete,
     onSkip
 }: PaywallScreenProps) {
-    const [offerings, setOfferings] = useState<PurchasesOffering[]>([]);
     const [currentOffering, setCurrentOffering] = useState<PurchasesOffering | null>(null);
     const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -56,34 +55,38 @@ export default function PaywallScreen({
     const initializePaywall = async () => {
         try {
             setIsLoading(true);
+            console.log('[PAYWALL] Initializing paywall...');
 
             // If mock flag is enabled OR RevenueCat is disabled, use mock paywall
             if (FLAGS.USE_MOCK_PAYWALL || !FLAGS.ENABLE_REVENUECAT) {
+                console.log('[PAYWALL] Using mock paywall (flags disabled)');
                 setUseMock(true);
                 setIsLoading(false);
                 return;
             }
 
             // Check if user is already subscribed
+            console.log('[PAYWALL] Checking subscription status...');
             const status = await revenueCatService.checkSubscriptionStatus();
             setSubscriptionStatus(status);
 
             if (status.isSubscribed) {
+                console.log('[PAYWALL] User already subscribed, skipping paywall');
                 // User is already subscribed, skip paywall
                 handleSubscriptionComplete();
                 return;
             }
 
-            // Fetch offerings
-            const fetchedOfferings = await revenueCatService.getOfferings();
-            setOfferings(fetchedOfferings);
-
-            // Get current offering
+            // Get current offering (this will initialize RevenueCat if needed)
+            console.log('[PAYWALL] Fetching current offering...');
             const current = await revenueCatService.getCurrentOffering();
             setCurrentOffering(current);
 
             // Check if we have valid offerings
             if (current && current.availablePackages.length > 0) {
+                console.log('[PAYWALL] ✅ Offerings loaded successfully');
+                console.log(`[PAYWALL] Available packages: ${current.availablePackages.length}`);
+
                 setUseMock(false);
                 // Auto-select yearly package if available (better value)
                 const yearlyPackage = current.availablePackages.find(
@@ -96,11 +99,13 @@ export default function PaywallScreen({
                 setSelectedPackage(yearlyPackage || monthlyPackage || current.availablePackages[0]);
             } else {
                 // No products returned → fall back to mock
+                console.log('[PAYWALL] ⚠️ No offerings available, falling back to mock paywall');
+                console.log('[PAYWALL] This is normal if products are not approved in App Store Connect yet');
                 setUseMock(true);
             }
 
         } catch (error) {
-            console.error('Failed to initialize paywall:', error);
+            console.error('[PAYWALL] ❌ Failed to initialize:', error);
             // Network / configuration error → fall back to mock
             setUseMock(true);
         } finally {

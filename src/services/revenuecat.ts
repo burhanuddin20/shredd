@@ -1,12 +1,47 @@
 import { REVENUECAT_CONFIG } from '@/src/config/revenuecat';
 import { Platform } from 'react-native';
 import Purchases, {
-    CustomerInfo,
-    LOG_LEVEL,
-    PurchasesError,
-    PurchasesOffering,
-    PurchasesPackage
+  CustomerInfo,
+  LOG_LEVEL,
+  PurchasesError,
+  PurchasesOffering,
+  PurchasesPackage
 } from 'react-native-purchases';
+
+// Logging helpers with consistent tags
+const LOG_TAG = {
+  DEBUG: '[RC DEBUG]',
+  INFO: '[RC INFO]',
+  WARN: '[RC WARN]',
+  ERROR: '[RC ERROR]',
+  OFFERINGS: '[RC OFFERINGS]',
+  PURCHASE: '[RC PURCHASE]',
+  INIT: '[RC INIT]',
+};
+
+const log = {
+  debug: (message: string, data?: any) => {
+    console.log(LOG_TAG.DEBUG, message, data || '');
+  },
+  info: (message: string, data?: any) => {
+    console.log(LOG_TAG.INFO, message, data || '');
+  },
+  warn: (message: string, data?: any) => {
+    console.warn(LOG_TAG.WARN, message, data || '');
+  },
+  error: (message: string, error?: any) => {
+    console.error(LOG_TAG.ERROR, message, error || '');
+  },
+  offerings: (message: string, data?: any) => {
+    console.log(LOG_TAG.OFFERINGS, message, data || '');
+  },
+  purchase: (message: string, data?: any) => {
+    console.log(LOG_TAG.PURCHASE, message, data || '');
+  },
+  init: (message: string, data?: any) => {
+    console.log(LOG_TAG.INIT, message, data || '');
+  },
+};
 
 // RevenueCat Configuration
 const REVENUECAT_API_KEY = {
@@ -18,17 +53,20 @@ const REVENUECAT_API_KEY = {
 export const PRODUCT_IDS = REVENUECAT_CONFIG.PRODUCT_IDS;
 
 // Subscription status
-export interface SubscriptionStatus {
+interface SubscriptionStatusType {
   isSubscribed: boolean;
   isActive: boolean;
   productId?: string;
-  expirationDate?: string;
+  expirationDate?: string | null;
   willRenew?: boolean;
 }
 
+export type SubscriptionStatus = SubscriptionStatusType;
+
 class RevenueCatService {
   private isInitialized = false;
-  private currentOfferings: PurchasesOffering[] | null = null;
+  private isInitializing = false;
+  private currentOffering: PurchasesOffering | null = null;
 
   /**
    * Initialize RevenueCat with API key and user configuration
@@ -36,43 +74,65 @@ class RevenueCatService {
   async initialize(userId?: string): Promise<void> {
     try {
       if (this.isInitialized) {
-        console.log('RevenueCat already initialized');
+        log.init('✅ Already initialized');
         return;
       }
 
+      if (this.isInitializing) {
+        log.init('⏳ Initialization already in progress, waiting...');
+        // Wait for initialization to complete
+        while (this.isInitializing) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return;
+      }
+
+      this.isInitializing = true;
+      log.init('🚀 Starting RevenueCat initialization...');
+
       const platform = Platform.OS;
-      console.log('Platform detected:', platform);
-      console.log('iOS API Key:', REVENUECAT_API_KEY.ios);
-      console.log('Android API Key:', REVENUECAT_API_KEY.android);
+      log.init(`📱 Platform detected: ${platform}`);
       
       const apiKey = platform === 'ios' ? REVENUECAT_API_KEY.ios : 
                      platform === 'android' ? REVENUECAT_API_KEY.android : 
                      undefined;
       
-      console.log('Selected API Key:', apiKey);
+      log.init(`🔑 API Key for ${platform}: ${apiKey ? apiKey.substring(0, 12) + '...' : 'NOT FOUND'}`);
       
       if (!apiKey) {
         throw new Error(`No RevenueCat API key found for platform: ${platform}`);
       }
 
+      // Set log level first
+      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      log.init('📝 Log level set to DEBUG');
+
       // Configure RevenueCat
+      log.init(`👤 Configuring with ${userId ? 'user ID: ' + userId : 'anonymous user'}...`);
       await Purchases.configure({
         apiKey,
         appUserID: userId || undefined, // Use provided userId or anonymous
       });
-
-      // Enable debug logs in development
-      if (__DEV__) {
-        Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-      }
-
+      
       this.isInitialized = true;
-      console.log('RevenueCat initialized successfully');
+      this.isInitializing = false;
+      log.init('✅ RevenueCat configured successfully');
 
-      // Fetch offerings on initialization
+      // Fetch offerings on initialization (non-blocking)
+      log.init('📦 Fetching offerings...');
       await this.fetchOfferings();
+      
     } catch (error) {
-      console.error('Failed to initialize RevenueCat:', error);
+      this.isInitializing = false;
+      log.error('❌ Failed to initialize RevenueCat:', error);
+      // Log detailed error information
+      if (error instanceof Error) {
+        log.error('Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        });
+      }
       throw error;
     }
   }
@@ -82,59 +142,148 @@ class RevenueCatService {
    */
   async setUserId(userId: string): Promise<void> {
     try {
+      log.info('👤 Setting user ID:', userId);
+      
       if (!this.isInitialized) {
+        log.info('   ⚠️ Not initialized, initializing now...');
         await this.initialize();
       }
+      
       await Purchases.logIn(userId);
-      console.log('RevenueCat user ID set:', userId);
+      log.info('   ✅ User ID set successfully');
     } catch (error) {
-      console.error('Failed to set RevenueCat user ID:', error);
+      log.error('❌ Failed to set user ID:', error);
       throw error;
     }
   }
 
   /**
    * Fetch available offerings from RevenueCat
+   * This properly awaits the SDK call and handles all edge cases
    */
-  async fetchOfferings(): Promise<PurchasesOffering[]> {
+  async fetchOfferings(): Promise<void> {
     try {
       if (!this.isInitialized) {
+        log.offerings('⚠️ Not initialized, initializing now...');
         await this.initialize();
       }
 
-      const offerings = await Purchases.getOfferings();
-      this.currentOfferings = offerings.all;
+      log.offerings('🔄 Fetching offerings from RevenueCat...');
       
-      console.log('RevenueCat offerings fetched:', Object.keys(offerings.all));
-      return offerings.all;
+      // This is the critical fix: properly await and handle the response
+      const offeringsResponse = await Purchases.getOfferings();
+      
+      log.offerings('📦 Raw offerings response received');
+      log.offerings('   - All offerings keys:', Object.keys(offeringsResponse.all || {}));
+      log.offerings('   - Current offering ID:', offeringsResponse.current?.identifier || 'NONE');
+      
+      // Store the current offering (the default one)
+      this.currentOffering = offeringsResponse.current || null;
+      
+      if (!this.currentOffering) {
+        log.warn('⚠️ No current offering found in RevenueCat dashboard');
+        log.warn('   This usually means:');
+        log.warn('   1. No offering is marked as "current" in RevenueCat dashboard');
+        log.warn('   2. Products are in "Missing Metadata" state in App Store Connect');
+        log.warn('   3. Products are not approved yet');
+        log.warn('   👉 App will fall back to mock paywall for testing');
+      } else {
+        log.offerings('✅ Current offering found:', this.currentOffering.identifier);
+        log.offerings('   - Available packages:', this.currentOffering.availablePackages.length);
+        
+        // Log each package for debugging
+        this.currentOffering.availablePackages.forEach((pkg, idx) => {
+          log.offerings(`   📦 Package ${idx + 1}:`, {
+            identifier: pkg.identifier,
+            packageType: pkg.packageType,
+            productId: pkg.product.identifier,
+            price: pkg.product.priceString,
+            title: pkg.product.title,
+          });
+        });
+      }
+      
     } catch (error) {
-      console.error('Failed to fetch RevenueCat offerings:', error);
-      throw error;
+      log.error('❌ Failed to fetch offerings:', error);
+      
+      // Log detailed error information
+      if (error instanceof Error) {
+        log.error('   Error name:', error.name);
+        log.error('   Error message:', error.message);
+        log.error('   Error stack:', error.stack);
+      }
+      
+      // Check if it's a RevenueCat-specific error
+      if (typeof error === 'object' && error !== null && 'code' in error) {
+        const rcError = error as PurchasesError;
+        log.error('   RC Error code:', rcError.code);
+        log.error('   RC Error message:', rcError.message);
+        log.error('   RC Underlying error:', rcError.underlyingErrorMessage);
+      }
+      
+      log.warn('⚠️ Setting current offering to null, app will use mock paywall');
+      this.currentOffering = null;
+      
+      // Don't throw - allow the app to continue with mock paywall
+      // throw error;
     }
-  }
-
-  /**
-   * Get current offerings (cached or fetch if needed)
-   */
-  async getOfferings(): Promise<PurchasesOffering[]> {
-    if (this.currentOfferings) {
-      return this.currentOfferings;
-    }
-    return await this.fetchOfferings();
   }
 
   /**
    * Get the current offering (usually the default)
+   * Returns null if offerings haven't been fetched or don't exist
    */
   async getCurrentOffering(): Promise<PurchasesOffering | null> {
     try {
-      const offerings = await this.getOfferings();
-      const current = await Purchases.getCurrentOffering();
-      return current;
+      log.offerings('🔍 Getting current offering...');
+      
+      if (!this.isInitialized) {
+        log.offerings('   ⚠️ Not initialized, initializing now...');
+        await this.initialize();
+      }
+      
+      // If we haven't fetched offerings yet, fetch them
+      if (this.currentOffering === null) {
+        log.offerings('   📦 No cached offering, fetching now...');
+        await this.fetchOfferings();
+      }
+      
+      if (this.currentOffering) {
+        log.offerings('   ✅ Returning current offering:', this.currentOffering.identifier);
+        log.offerings('   📦 Packages available:', this.currentOffering.availablePackages.length);
+      } else {
+        log.warn('   ⚠️ No current offering available');
+        log.warn('   This is normal during Apple review if products are not approved yet');
+      }
+      
+      return this.currentOffering;
     } catch (error) {
-      console.error('Failed to get current offering:', error);
+      log.error('❌ Failed to get current offering:', error);
+      
+      // Log the error type
+      if (error instanceof Error) {
+        log.error('   Error type:', error.constructor.name);
+        log.error('   Error message:', error.message);
+      } else if (typeof error === 'object' && error !== null) {
+        log.error('   Error object:', JSON.stringify(error, null, 2));
+      } else {
+        log.error('   Error value:', String(error));
+      }
+      
       return null;
     }
+  }
+
+  /**
+   * Create a mock offering for testing when real offerings are unavailable
+   * This is useful during Apple review when products might not be approved yet
+   */
+  getMockOffering(): PurchasesOffering | null {
+    log.warn('🎭 Using mock offering (real offerings unavailable)');
+    log.warn('   This is expected during Apple review if products are not yet approved');
+    
+    // Return null - the UI will handle showing mock paywall
+    return null;
   }
 
   /**
@@ -143,16 +292,36 @@ class RevenueCatService {
   async purchasePackage(packageToPurchase: PurchasesPackage): Promise<CustomerInfo> {
     try {
       if (!this.isInitialized) {
+        log.purchase('⚠️ Not initialized, initializing now...');
         await this.initialize();
       }
 
-      console.log('Purchasing package:', packageToPurchase.identifier);
+      log.purchase('💳 Initiating purchase...');
+      log.purchase('   Package:', packageToPurchase.identifier);
+      log.purchase('   Product:', packageToPurchase.product.identifier);
+      log.purchase('   Price:', packageToPurchase.product.priceString);
+      
       const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
       
-      console.log('Purchase successful:', packageToPurchase.identifier);
+      log.purchase('✅ Purchase completed successfully!');
+      log.purchase('   Active entitlements:', Object.keys(customerInfo.entitlements.active));
+      
       return customerInfo;
     } catch (error) {
-      console.error('Purchase failed:', error);
+      log.error('❌ Purchase failed:', error);
+      
+      // Log error details
+      if (typeof error === 'object' && error !== null && 'code' in error) {
+        const rcError = error as PurchasesError;
+        log.error('   Error code:', rcError.code);
+        log.error('   Error message:', rcError.message);
+        
+        // User cancelled is not really an error
+        if (rcError.code && rcError.code.includes('PAYMENT_CANCELLED')) {
+          log.info('   ℹ️ User cancelled the purchase');
+        }
+      }
+      
       throw this.handlePurchaseError(error as PurchasesError);
     }
   }
@@ -163,16 +332,25 @@ class RevenueCatService {
   async restorePurchases(): Promise<CustomerInfo> {
     try {
       if (!this.isInitialized) {
+        log.purchase('⚠️ Not initialized, initializing now...');
         await this.initialize();
       }
 
-      console.log('Restoring purchases...');
+      log.purchase('🔄 Restoring purchases...');
       const customerInfo = await Purchases.restorePurchases();
       
-      console.log('Purchases restored successfully');
+      const activeEntitlements = Object.keys(customerInfo.entitlements.active);
+      
+      if (activeEntitlements.length > 0) {
+        log.purchase('✅ Purchases restored successfully!');
+        log.purchase('   Active entitlements:', activeEntitlements);
+      } else {
+        log.purchase('ℹ️ No active purchases found to restore');
+      }
+      
       return customerInfo;
     } catch (error) {
-      console.error('Failed to restore purchases:', error);
+      log.error('❌ Failed to restore purchases:', error);
       throw error;
     }
   }
@@ -183,9 +361,11 @@ class RevenueCatService {
   async checkSubscriptionStatus(): Promise<SubscriptionStatus> {
     try {
       if (!this.isInitialized) {
+        log.info('⚠️ Not initialized, initializing now...');
         await this.initialize();
       }
 
+      log.info('🔍 Checking subscription status...');
       const customerInfo = await Purchases.getCustomerInfo();
       const activeEntitlements = customerInfo.entitlements.active;
       
@@ -194,6 +374,11 @@ class RevenueCatService {
       
       if (hasActiveSubscription) {
         const entitlement = Object.values(activeEntitlements)[0];
+        log.info('✅ Active subscription found!');
+        log.info('   Product:', entitlement.productIdentifier);
+        log.info('   Expires:', entitlement.expirationDate || 'Never');
+        log.info('   Will renew:', entitlement.willRenew);
+        
         return {
           isSubscribed: true,
           isActive: true,
@@ -203,12 +388,13 @@ class RevenueCatService {
         };
       }
 
+      log.info('ℹ️ No active subscription found');
       return {
         isSubscribed: false,
         isActive: false,
       };
     } catch (error) {
-      console.error('Failed to check subscription status:', error);
+      log.error('❌ Failed to check subscription status:', error);
       return {
         isSubscribed: false,
         isActive: false,
@@ -222,12 +408,17 @@ class RevenueCatService {
   async getCustomerInfo(): Promise<CustomerInfo> {
     try {
       if (!this.isInitialized) {
+        log.info('⚠️ Not initialized, initializing now...');
         await this.initialize();
       }
 
-      return await Purchases.getCustomerInfo();
+      log.debug('📊 Fetching customer info...');
+      const customerInfo = await Purchases.getCustomerInfo();
+      log.debug('   ✅ Customer info retrieved');
+      
+      return customerInfo;
     } catch (error) {
-      console.error('Failed to get customer info:', error);
+      log.error('❌ Failed to get customer info:', error);
       throw error;
     }
   }
@@ -236,74 +427,80 @@ class RevenueCatService {
    * Handle purchase errors with user-friendly messages
    */
   private handlePurchaseError(error: PurchasesError): Error {
-    switch (error.code) {
-      case 'PURCHASES_ERROR_PRODUCT_NOT_AVAILABLE_FOR_PURCHASE':
-        return new Error('This product is not available for purchase');
-      case 'PURCHASES_ERROR_PAYMENT_PENDING':
-        return new Error('Payment is pending. Please check your payment method');
-      case 'PURCHASES_ERROR_PAYMENT_CANCELLED':
-        return new Error('Payment was cancelled');
-      case 'PURCHASES_ERROR_PAYMENT_INVALID':
-        return new Error('Payment method is invalid');
-      case 'PURCHASES_ERROR_PAYMENT_NOT_ALLOWED':
-        return new Error('Payment is not allowed on this device');
-      case 'PURCHASES_ERROR_PURCHASE_INVALID':
-        return new Error('Purchase is invalid');
-      case 'PURCHASES_ERROR_PURCHASE_NOT_ALLOWED':
-        return new Error('Purchase is not allowed');
-      case 'PURCHASES_ERROR_PURCHASE_ALREADY_OWNED':
-        return new Error('You already own this product');
-      case 'PURCHASES_ERROR_RECEIPT_ALREADY_IN_USE':
-        return new Error('Receipt is already in use');
-      case 'PURCHASES_ERROR_INVALID_RECEIPT':
-        return new Error('Receipt is invalid');
-      case 'PURCHASES_ERROR_MISSING_RECEIPT_FILE':
-        return new Error('Receipt file is missing');
-      case 'PURCHASES_ERROR_NETWORK_ERROR':
-        return new Error('Network error. Please check your connection');
-      case 'PURCHASES_ERROR_INVALID_CREDENTIALS':
-        return new Error('Invalid credentials');
-      case 'PURCHASES_ERROR_INVALID_APP_USER_ID':
-        return new Error('Invalid user ID');
-      case 'PURCHASES_ERROR_OPERATION_ALREADY_IN_PROGRESS_FOR_USER':
-        return new Error('Operation already in progress');
-      case 'PURCHASES_ERROR_INVALID_SUBSCRIBER_ATTRIBUTES':
-        return new Error('Invalid subscriber attributes');
-      case 'PURCHASES_ERROR_INVALID_MANAGED_PLAY_CONSOLE_ACCOUNT':
-        return new Error('Invalid Google Play Console account');
-      case 'PURCHASES_ERROR_PLAY_STORE_QUOTA_EXCEEDED':
-        return new Error('Google Play Store quota exceeded');
-      case 'PURCHASES_ERROR_PLAY_STORE_INVALID_PACKAGE_NAME':
-        return new Error('Invalid package name');
-      case 'PURCHASES_ERROR_PLAY_STORE_ACCOUNT_NOT_FOUND':
-        return new Error('Google Play account not found');
-      case 'PURCHASES_ERROR_PRODUCT_ALREADY_PURCHASED_ERROR':
-        return new Error('Product already purchased');
-      case 'PURCHASES_ERROR_PRODUCT_NOT_AVAILABLE_IN_CURRENT_STORE_FRONT':
-        return new Error('Product not available in current store');
-      case 'PURCHASES_ERROR_CUSTOMER_INFO_ERROR':
-        return new Error('Failed to get customer info');
-      case 'PURCHASES_ERROR_SYSTEM_ERROR':
-        return new Error('System error occurred');
-      case 'PURCHASES_ERROR_UNKNOWN_ERROR':
-      default:
-        return new Error('An unknown error occurred. Please try again');
+    const errorCode = error.code || '';
+    const errorMessage = error.message || 'An unknown error occurred';
+    
+    // Map error codes to user-friendly messages
+    const errorMap: Record<string, string> = {
+      'PRODUCT_NOT_AVAILABLE': 'This product is not available for purchase',
+      'PAYMENT_PENDING': 'Payment is pending. Please check your payment method',
+      'PAYMENT_CANCELLED': 'Payment was cancelled',
+      'PAYMENT_INVALID': 'Payment method is invalid',
+      'PAYMENT_NOT_ALLOWED': 'Payment is not allowed on this device',
+      'PURCHASE_INVALID': 'Purchase is invalid',
+      'PURCHASE_NOT_ALLOWED': 'Purchase is not allowed',
+      'PURCHASE_ALREADY_OWNED': 'You already own this product',
+      'ALREADY_OWNED': 'You already own this product',
+      'RECEIPT_ALREADY_IN_USE': 'Receipt is already in use',
+      'INVALID_RECEIPT': 'Receipt is invalid',
+      'MISSING_RECEIPT': 'Receipt file is missing',
+      'NETWORK_ERROR': 'Network error. Please check your connection',
+      'INVALID_CREDENTIALS': 'Invalid credentials',
+      'INVALID_APP_USER_ID': 'Invalid user ID',
+      'OPERATION_ALREADY_IN_PROGRESS': 'Operation already in progress',
+      'INVALID_SUBSCRIBER_ATTRIBUTES': 'Invalid subscriber attributes',
+      'STORE_PROBLEM': 'There was a problem with the app store',
+      'PRODUCT_ALREADY_PURCHASED': 'Product already purchased',
+      'NOT_AVAILABLE_IN_STORE': 'Product not available in current store',
+      'CUSTOMER_INFO_ERROR': 'Failed to get customer info',
+      'SYSTEM_ERROR': 'System error occurred',
+    };
+    
+    // Check if any known error code pattern matches
+    for (const [key, message] of Object.entries(errorMap)) {
+      if (errorCode.includes(key)) {
+        log.error(`   🔍 Mapped error code "${errorCode}" to: ${message}`);
+        return new Error(message);
+      }
     }
+    
+    // Default error message
+    log.error(`   ⚠️ Unmapped error code: ${errorCode}`);
+    return new Error(errorMessage || 'An unknown error occurred. Please try again');
   }
 
   /**
    * Reset RevenueCat (for testing)
+   * Note: This logs out the current user and resets local state
    */
   async reset(): Promise<void> {
     try {
-      await Purchases.reset();
+      log.info('🔄 Resetting RevenueCat...');
+      
+      // Log out the current user (this is the proper way to reset in v5+)
+      if (this.isInitialized) {
+        await Purchases.logOut();
+      }
+      
       this.isInitialized = false;
-      this.currentOfferings = null;
-      console.log('RevenueCat reset successfully');
+      this.isInitializing = false;
+      this.currentOffering = null;
+      log.info('✅ RevenueCat reset successfully');
     } catch (error) {
-      console.error('Failed to reset RevenueCat:', error);
+      log.error('❌ Failed to reset RevenueCat:', error);
       throw error;
     }
+  }
+
+  /**
+   * Get initialization status
+   */
+  getInitializationStatus(): { isInitialized: boolean; isInitializing: boolean; hasOffering: boolean } {
+    return {
+      isInitialized: this.isInitialized,
+      isInitializing: this.isInitializing,
+      hasOffering: this.currentOffering !== null,
+    };
   }
 }
 
@@ -311,5 +508,5 @@ class RevenueCatService {
 export const revenueCatService = new RevenueCatService();
 
 // Export types for use in components
-export type { CustomerInfo, PurchasesOffering, PurchasesPackage, SubscriptionStatus };
+export type { CustomerInfo, PurchasesOffering, PurchasesPackage };
 
