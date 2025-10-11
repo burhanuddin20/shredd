@@ -104,8 +104,8 @@ class RevenueCatService {
       }
 
       // Set log level first
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-      log.init('📝 Log level set to DEBUG');
+      // Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      // log.init('📝 Log level set to DEBUG');
 
       // Configure RevenueCat
       log.init(`👤 Configuring with ${userId ? 'user ID: ' + userId : 'anonymous user'}...`);
