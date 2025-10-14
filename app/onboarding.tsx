@@ -249,16 +249,16 @@ export default function OnboardingScreen() {
   };
 
   const startLoadingSequence = async () => {
-    setIsLoading(true); // Start animation
-    setIsSubmitting(true); // Prevent multiple submissions
+    //animation
+    setIsLoading(true); 
+    // stop multiple submissions
+    setIsSubmitting(true); 
 
-    // Start continuous haptic feedback to simulate building
     const hapticInterval = setInterval(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }, 200); // Light haptic every 200ms
+    }, 200);
 
     try {
-      // Save user data first
       const validatedName = validateAndSanitizeName(userName);
       const finalPlan = selectedPlan || '16:8';
 
@@ -266,7 +266,7 @@ export default function OnboardingScreen() {
         throw new Error('Valid name is required');
       }
 
-      // Save user data to SQLite
+      //todo userName is being saved
       await saveUser({
         id: `user_${Date.now()}`,
         username: validatedName,
@@ -278,10 +278,8 @@ export default function OnboardingScreen() {
         synced: false,
       });
 
-      // Refresh user data in UserProfileProvider
       await refreshUserData();
 
-      // Keep loading animation for 2 seconds before proceeding to RevenueCat/Paywall
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       clearInterval(hapticInterval);
@@ -304,16 +302,20 @@ export default function OnboardingScreen() {
           setShowPaywall(true); // This will render PaywallScreen
         }
       } else {
-        console.log('[Onboarding] RevenueCat disabled, showing mock paywall.');
-        setShowPaywall(true); // RevenueCat disabled - go directly to paywall (which will show mock)
+        console.log('[Onboarding] RevenueCat disabled, skipping paywall.');
+          if(FLAGS.BYPASS_PAYWALL){
+            console.log('[Onboarding] Paywall bypassed, navigating to main app.');
+            handlePaywallSkip();
+          } 
       }
     } catch (error) {
       clearInterval(hapticInterval);
       console.error('[Onboarding] Failed to complete onboarding:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to complete setup. Please try again.');
+      Alert.alert('Error', 'Failed to complete setup. Please try again later.');
       setIsLoading(false); // Stop animation on error
       setIsSubmitting(false); // Allow resubmission on error
+      // don't skip paywall if error
     }
   };
 
@@ -321,17 +323,17 @@ export default function OnboardingScreen() {
   const handlePaywallComplete = () => {
     console.log('[Onboarding] Paywall completed, navigating to main app.');
     setShowPaywall(false);
-    setIsLoading(false); // Stop animation after paywall
-    setIsSubmitting(false); // Allow new submissions after paywall
+    // stop loading animation
+    setIsLoading(false); 
+    setIsSubmitting(false); 
     router.replace('/(tabs)');
   };
 
-  // Handle paywall skip (for testing)
   const handlePaywallSkip = () => {
     console.log('[Onboarding] Paywall skipped, navigating to main app.');
     setShowPaywall(false);
-    setIsLoading(false); // Stop animation after paywall
-    setIsSubmitting(false); // Allow new submissions after paywall
+    setIsLoading(false); 
+    setIsSubmitting(false);
     router.replace('/(tabs)');
   };
 

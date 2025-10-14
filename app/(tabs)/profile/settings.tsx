@@ -65,19 +65,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleExportData = () => {
-    Alert.alert(
-      'Export Data',
-      'Export your fasting data as a CSV file?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Export', onPress: () => {
-          // In a real app, this would export user data
-          Alert.alert('Success', 'Data exported successfully!');
-        }},
-      ]
-    );
-  };
+
 
   const handleResetProgress = () => {
     Alert.alert(
@@ -214,14 +202,6 @@ export default function SettingsScreen() {
       title: 'Data & Privacy',
       items: [
         {
-          id: 'exportData',
-          title: 'Export Data',
-          subtitle: 'Download your fasting data',
-          type: 'action',
-          icon: 'square.and.arrow.up.fill',
-          onPress: handleExportData,
-        },
-        {
           id: 'resetProgress',
           title: 'Reset Progress',
           subtitle: 'Clear all your fasting history and progress. Subscriptions can be restored anytime',
@@ -268,10 +248,9 @@ export default function SettingsScreen() {
           onPress: handleRateApp,
         },
         {
+          // to do this one is broken
           id: 'appVersion',
           title: 'App Version',
-          // todo handle this 
-          // maybe show the app version and build number
           subtitle: `Version ${Constants.expoConfig?.version} (Build ${Constants.expoConfig?.ios?.buildNumber})`,
           type: 'info',
           icon: 'info.circle.fill',
@@ -349,27 +328,6 @@ export default function SettingsScreen() {
             </View>
           </View>
         ))}
-
-        {/* Subscription Info */}
-        <View style={[styles.subscriptionCard, { backgroundColor: colors.accent + '20' }]}>
-          <View style={styles.subscriptionHeader}>
-            <IconSymbol name="crown.fill" size={24} color={colors.accent} />
-            <Text style={[styles.subscriptionTitle, { color: colors.text }]}>
-              Shredd Premium
-            </Text>
-          </View>
-          <Text style={[styles.subscriptionSubtitle, { color: colors.icon }]}>
-            Unlock advanced features and track unlimited fasts
-          </Text>
-          <TouchableOpacity 
-            style={[styles.subscriptionButton, { backgroundColor: colors.accent }]}
-            onPress={() => Alert.alert('Premium', 'Premium features coming soon!')}
-          >
-            <Text style={[styles.subscriptionButtonText, { color: colors.primary }]}>
-              Upgrade Now - $2/month
-            </Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
