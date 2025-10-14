@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "Shredd",
     slug: "shredd",
-    version: "1.0.0",
+    version: "1.0.6",
     orientation: "portrait",
     icon: "./assets/icons/appstore.png",
     userInterfaceStyle: "automatic",
@@ -20,7 +20,8 @@ export default {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.shredd.fasting",
-      icon: "./assets/icons/Assets.xcassets/AppIcon.appiconset/1024.png"
+      icon: "./assets/icons/Assets.xcassets/AppIcon.appiconset/1024.png",
+      buildNumber: "3"
     },
     android: {
       icon: "./assets/icons/playstore.png",

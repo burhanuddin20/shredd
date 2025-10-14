@@ -2,8 +2,10 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useHaptics } from '@/hooks/use-haptics';
+import { clearAllData } from '@/src/lib/db';
 import { Stack } from 'expo-router';
 import React, { useState } from 'react';
+import * as Updates from 'expo-updates';
 import {
     Alert,
     Linking,
@@ -15,6 +17,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 
 interface SettingsSection {
   id: string;
@@ -85,28 +88,48 @@ export default function SettingsScreen() {
         { 
           text: 'Reset', 
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Progress Reset', 'All progress has been reset.');
+          onPress: async () => {
+            try{
+              await clearAllData();
+              Alert.alert('Progress Reset', 'All progress has been reset.');
+              await restartApp();
+
+            } catch (error) {
+              console.error('Failed to reset progress:', error);
+              Alert.alert('Error', 'Failed to reset progress');
+            }
           }
         },
       ]
     );
   };
 
+  const restartApp = async () => {
+    try {
+      await Updates.reloadAsync();
+    } catch (error) {
+      console.error('Failed to restart app:', error);
+    }
+  };
+
+
   const handleContactSupport = () => {
+    // todo handle this 
     Linking.openURL('mailto:support@shredd.com?subject=Shredd Support');
   };
 
   const handleRateApp = () => {
-    // In a real app, this would open the app store
+    // todo handle this 
     Alert.alert('Rate App', 'Thank you for using Shredd! Rating feature coming soon.');
   };
 
   const handlePrivacyPolicy = () => {
+    // todo handle this 
     Linking.openURL('https://shredd.com/privacy');
   };
 
   const handleTermsOfService = () => {
+    // todo handle this 
     Linking.openURL('https://shredd.com/terms');
   };
 
@@ -176,15 +199,6 @@ export default function SettingsScreen() {
           onToggle: (value) => handleToggle('soundEffects'),
         },
         {
-          id: 'darkMode',
-          title: 'Dark Mode',
-          subtitle: 'Use dark theme throughout the app',
-          type: 'toggle',
-          value: settings.darkMode,
-          icon: 'moon.fill',
-          onToggle: (value) => handleToggle('darkMode'),
-        },
-        {
           id: 'autoStartTimer',
           title: 'Auto-Start Timer',
           subtitle: 'Automatically start timer when fast begins',
@@ -210,7 +224,7 @@ export default function SettingsScreen() {
         {
           id: 'resetProgress',
           title: 'Reset Progress',
-          subtitle: 'Clear all your fasting history and progress',
+          subtitle: 'Clear all your fasting history and progress. Subscriptions can be restored anytime',
           type: 'action',
           icon: 'trash.fill',
           onPress: handleResetProgress,
@@ -256,7 +270,9 @@ export default function SettingsScreen() {
         {
           id: 'appVersion',
           title: 'App Version',
-          subtitle: '1.0.0',
+          // todo handle this 
+          // maybe show the app version and build number
+          subtitle: `Version ${Constants.expoConfig?.version} (Build ${Constants.expoConfig?.ios?.buildNumber})`,
           type: 'info',
           icon: 'info.circle.fill',
         },

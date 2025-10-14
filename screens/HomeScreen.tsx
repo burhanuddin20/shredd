@@ -1,5 +1,5 @@
 import { AchievementAnimation } from '@/components/animations/AchievementAnimation';
-import { AnimationDemo } from '@/components/animations/AnimationDemo';
+// import { AnimationDemo } from '@/components/animations/AnimationDemo';
 import { LevelUpAnimation } from '@/components/animations/LevelUpAnimation';
 import { ProgressRing } from '@/components/shared/progress-ring';
 import { COLORS, FONTS, SIZES } from '@/components/shared/theme';
@@ -11,7 +11,7 @@ import {
 } from '@/constants/game';
 import { useAnimations } from '@/hooks/use-animations';
 import { useDatabase } from '@/src/lib/DatabaseProvider';
-import { clearAllData, getCompletedFastsCount } from '@/src/lib/db';
+import {getCompletedFastsCount } from '@/src/lib/db';
 import { useFasting } from '@/src/lib/FastingProvider';
 import { useUserProfile } from '@/src/lib/UserProfileProvider';
 import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
@@ -248,30 +248,7 @@ export default function HomeScreen() {
         }
     };
 
-    // Reset database for testing (temporary function)
-    const handleResetDatabase = async () => {
-        Alert.alert(
-            'Reset Database',
-            'This will clear all user data and return you to onboarding. Are you sure?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Reset',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await clearAllData();
-                            // Force reload by restarting the app
-                            Alert.alert('Success', 'Database cleared. Please restart the app to see onboarding.');
-                        } catch (error) {
-                            console.error('Failed to clear database:', error);
-                            Alert.alert('Error', 'Failed to clear database');
-                        }
-                    }
-                }
-            ]
-        );
-    };
+
 
     if (!fontsLoaded || !dbInitialized || fastingLoading || profileLoading || !userProfile || !user) {
         return (
@@ -347,19 +324,19 @@ export default function HomeScreen() {
                     </Text>
                 </TouchableOpacity>
 
-                {/* Animation Demo - Remove this in production */}
-                <AnimationDemo
+                {/* Animation Demo */}
+                {/* <AnimationDemo
                     onTriggerLevelUp={triggerLevelUp}
                     onTriggerAchievement={triggerAchievementUnlock}
-                />
+                /> */}
 
                 {/* Reset Database Button - Remove this in production */}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                     style={[styles.actionButton, { backgroundColor: COLORS.accent, marginTop: 20 }]}
                     onPress={handleResetDatabase}
                 >
                     <Text style={styles.actionButtonText}>RESET DATABASE (TEST)</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
                 {/* Animation Modals */}
                 {levelUpVisible && levelUpData && (
