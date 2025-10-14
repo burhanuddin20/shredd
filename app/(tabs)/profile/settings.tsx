@@ -3,21 +3,22 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useHaptics } from '@/hooks/use-haptics';
 import { clearAllData } from '@/src/lib/db';
+import { cancelAllScheduledNotifications, registerForPushNotificationsAsync, schedulePushNotification } from '@/src/services/notifications';
+import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
-import React, { useState } from 'react';
 import * as Updates from 'expo-updates';
+import React, { useState } from 'react';
 import {
-    Alert,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Constants from 'expo-constants';
 
 interface SettingsSection {
   id: string;
@@ -40,7 +41,7 @@ export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'dark'];
   const haptics = useHaptics();
-  
+
   const [settings, setSettings] = useState({
     notifications: true,
     haptics: true,
@@ -58,10 +59,54 @@ export default function SettingsScreen() {
       ...prev,
       [key]: !prev[key],
     }));
-    
+
     // Update haptic settings when haptics toggle changes
     if (key === 'haptics') {
       haptics.setEnabled(!settings.haptics);
+    }
+
+    // Handle notification settings
+    if (key === 'notifications') {
+      if (!settings.notifications) { // If turning notifications ON
+        registerForPushNotificationsAsync().then(token => {
+          if (token) {
+            console.log('[SETTINGS] Push notifications enabled. Token:', token);
+            // Re-schedule all sub-notifications that are currently enabled
+            if (settings.reminderNotifications) schedulePushNotification('Fast Reminder', 'Time to start your fast!');
+            if (settings.achievementNotifications) schedulePushNotification('Achievement Unlocked', 'You earned an achievement!');
+            if (settings.streakReminders) schedulePushNotification('Streak Reminder', 'Keep your streak alive!');
+          } else {
+            // If token not received, turn off the main toggle again as it's not truly enabled
+            setSettings(prev => ({ ...prev, notifications: false }));
+            Alert.alert('Notifications Error', 'Could not enable push notifications. Please check app permissions.');
+          }
+        });
+      } else { // If turning notifications OFF
+        cancelAllScheduledNotifications();
+        console.log('[SETTINGS] Push notifications disabled.');
+      }
+    } else if (key === 'reminderNotifications' || key === 'achievementNotifications' || key === 'streakReminders') {
+      if (settings.notifications) { // Only schedule if main push notifications are enabled
+        if (!settings[key]) { // If turning ON a specific notification
+          const title = key === 'reminderNotifications' ? 'Fast Reminder' :
+            key === 'achievementNotifications' ? 'Achievement Unlocked' :
+              'Streak Reminder';
+          const body = key === 'reminderNotifications' ? 'Time to start your fast!' :
+            key === 'achievementNotifications' ? 'You earned an achievement!' :
+              'Keep your streak alive!';
+          schedulePushNotification(title, body);
+          console.log(`[SETTINGS] ${title} scheduled.`);
+        } else { // If turning OFF a specific notification
+          // For simplicity, we'll cancel all and reschedule. A more robust solution
+          // would involve tracking individual notification IDs.
+          cancelAllScheduledNotifications();
+          // Re-schedule others if needed (this is a simplified approach)
+          if (key !== 'reminderNotifications' && settings.reminderNotifications) schedulePushNotification('Fast Reminder', 'Time to start your fast!');
+          if (key !== 'achievementNotifications' && settings.achievementNotifications) schedulePushNotification('Achievement Unlocked', 'You earned an achievement!');
+          if (key !== 'streakReminders' && settings.streakReminders) schedulePushNotification('Streak Reminder', 'Keep your streak alive!');
+          console.log(`[SETTINGS] ${key} cancelled.`);
+        }
+      }
     }
   };
 
@@ -73,11 +118,11 @@ export default function SettingsScreen() {
       'Are you sure you want to reset all your progress? This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Reset', 
+        {
+          text: 'Reset',
           style: 'destructive',
           onPress: async () => {
-            try{
+            try {
               await clearAllData();
               Alert.alert('Progress Reset', 'All progress has been reset.');
               await restartApp();
@@ -270,7 +315,7 @@ export default function SettingsScreen() {
         <View style={styles.itemLeft}>
           {item.icon && (
             <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
-              <IconSymbol name={item.icon} size={20} color={colors.accent} />
+              <IconSymbol name={item.icon as any} size={20} color={colors.accent} />
             </View>
           )}
           <View style={styles.itemText}>
@@ -309,14 +354,14 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Settings',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
-        }} 
+        }}
       />
-      
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {settingsSections.map((section) => (
           <View key={section.id} style={styles.section}>

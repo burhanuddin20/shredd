@@ -1,3 +1,6 @@
+import { ACHIEVEMENTS } from '@/constants/game';
+import { getUserSettings } from '@/src/lib/settings';
+import { schedulePushNotification } from '@/src/services/notifications';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useDatabase } from './DatabaseProvider';
 import { Achievement, getAchievements, getUser, hasAchievement, unlockAchievement as unlockAchievementDb, updateUserProfile as updateUserProfileDb, updateUserStreak, updateUserXP, UserProfile } from './db';
@@ -82,6 +85,30 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
         try {
             await updateUserStreak(newStreak);
 
+            // Schedule streak reminder notification if enabled
+            const settings = await getUserSettings();
+            if (settings.notifications && settings.streakReminders && newStreak > 0) {
+                // Schedule a reminder for the next day to keep the streak alive
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(20, 0, 0, 0); // E.g., remind at 8 PM tomorrow
+
+                // For simplicity, we'll schedule one reminder. A more robust solution
+                // would check if a reminder is already scheduled for tomorrow.
+                await schedulePushNotification(
+                    'Streak Reminder',
+                    `Your fasting streak is at ${newStreak} days! Don't forget to log your fast tomorrow to keep it going.`,
+                    { type: 'streak_reminder', streak: newStreak, date: tomorrow.toISOString() },
+                    tomorrow // Schedule for tomorrow
+                );
+                console.log('[STREAK] Streak reminder scheduled for:', tomorrow.toISOString());
+            } else if (settings.notifications && settings.streakReminders && newStreak === 0) {
+                // If streak is reset to 0, cancel any pending streak reminders
+                // Note: This simplified approach cancels ALL, in a real app, you'd cancel specific ones.
+                await cancelAllScheduledNotifications();
+                console.log('[STREAK] All scheduled notifications cancelled due to streak reset.');
+            }
+
             // Update local state immediately
             setUserProfile(prev => prev ? { ...prev, streak: newStreak } : null);
 
@@ -96,6 +123,20 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({ childr
     const unlockAchievement = async (achievementId: string): Promise<void> => {
         try {
             await unlockAchievementDb(achievementId);
+
+            // Fetch achievement details from constants/game.ts
+            const achievementDetails = ACHIEVEMENTS.find(a => a.id === achievementId);
+            const settings = await getUserSettings();
+
+            if (settings.notifications && settings.achievementNotifications && achievementDetails) {
+                await schedulePushNotification(
+                    'Achievement Unlocked!',
+                    `You earned the ${achievementDetails.name} achievement! ${achievementDetails.description}`,
+                    { type: 'achievement', achievementId }
+                );
+                console.log('[ACHIEVEMENTS] Achievement notification scheduled for:', achievementId);
+            }
+
             await loadUserData();
         } catch (error) {
             console.error('Failed to unlock achievement:', error);

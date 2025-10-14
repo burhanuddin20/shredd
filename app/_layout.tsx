@@ -1,15 +1,41 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DatabaseProvider } from '@/src/lib/DatabaseProvider';
 import { FastingProvider } from '@/src/lib/FastingProvider';
 import { UserProfileProvider } from '@/src/lib/UserProfileProvider';
+import {
+  registerForPushNotificationsAsync,
+  setupNotificationHandlers
+} from '@/src/services/notifications';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    // Register for push notifications
+    registerForPushNotificationsAsync().then((token) => {
+      if (token) {
+        console.log('[NOTIFICATIONS] Registered for push notifications with token:', token);
+        // You might want to send this token to your backend
+      } else {
+        console.log('[NOTIFICATIONS] Failed to get push token.');
+      }
+    });
+
+    // Set up notification handlers
+    setupNotificationHandlers();
+
+    // Clean up notification handlers when component unmounts
+    return () => {
+      // Notifications.removeNotificationSubscription(notificationReceivedListener);
+      // Notifications.removeNotificationSubscription(notificationResponseReceivedListener);
+    };
+  }, []);
 
   return (
     <DatabaseProvider>

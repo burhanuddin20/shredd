@@ -250,9 +250,9 @@ export default function OnboardingScreen() {
 
   const startLoadingSequence = async () => {
     //animation
-    setIsLoading(true); 
+    setIsLoading(true);
     // stop multiple submissions
-    setIsSubmitting(true); 
+    setIsSubmitting(true);
 
     const hapticInterval = setInterval(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -284,7 +284,7 @@ export default function OnboardingScreen() {
 
       clearInterval(hapticInterval);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      setIsLoading(false); // Stop animation after delay
+      setIsLoading(false);
 
       // Check if RevenueCat is enabled
       if (FLAGS.ENABLE_REVENUECAT) {
@@ -303,10 +303,10 @@ export default function OnboardingScreen() {
         }
       } else {
         console.log('[Onboarding] RevenueCat disabled, skipping paywall.');
-          if(FLAGS.BYPASS_PAYWALL){
-            console.log('[Onboarding] Paywall bypassed, navigating to main app.');
-            handlePaywallSkip();
-          } 
+        if (FLAGS.BYPASS_PAYWALL) {
+          console.log('[Onboarding] Paywall bypassed, navigating to main app.');
+          handlePaywallSkip();
+        }
       }
     } catch (error) {
       clearInterval(hapticInterval);
@@ -324,15 +324,15 @@ export default function OnboardingScreen() {
     console.log('[Onboarding] Paywall completed, navigating to main app.');
     setShowPaywall(false);
     // stop loading animation
-    setIsLoading(false); 
-    setIsSubmitting(false); 
+    setIsLoading(false);
+    setIsSubmitting(false);
     router.replace('/(tabs)');
   };
 
   const handlePaywallSkip = () => {
     console.log('[Onboarding] Paywall skipped, navigating to main app.');
     setShowPaywall(false);
-    setIsLoading(false); 
+    setIsLoading(false);
     setIsSubmitting(false);
     router.replace('/(tabs)');
   };
