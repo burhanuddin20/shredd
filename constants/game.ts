@@ -24,7 +24,7 @@ export const XP_PER_LEVEL = [
 
 // Fasting plans with duration in hours
 export const FASTING_PLANS = [
-  { id: 'test-5s', name: '5s Test', fastingHours: 5/3600, eatingHours: 10/3600, difficulty: 'Test' }, // 5 seconds for testing
+  // { id: 'test-5s', name: '5s Test', fastingHours: 5/3600, eatingHours: 10/3600, difficulty: 'Test' }, // 5 seconds for testing
   { id: '12:12', name: '12:12 Easy', fastingHours: 12, eatingHours: 12, difficulty: 'Easy' },
   { id: '16:8', name: '16:8 Advanced', fastingHours: 16, eatingHours: 8, difficulty: 'Advanced' },
   { id: '18:6', name: '18:6 Advanced', fastingHours: 18, eatingHours: 6, difficulty: 'Advanced' },
