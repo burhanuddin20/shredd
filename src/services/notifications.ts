@@ -37,12 +37,12 @@ export async function registerForPushNotificationsAsync() {
     }
 
     if (finalStatus !== 'granted') {
-      console.log('[NOTIFICATIONS] Failed to get push token for push notification!');
+      // console.log('[NOTIFICATIONS] Failed to get push token for push notification!');
       return null;
     }
 
     token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log('[NOTIFICATIONS] Expo Push Token:', token);
+    // console.log('[NOTIFICATIONS] Expo Push Token:', token);
 
   } else {
     console.log('[NOTIFICATIONS] Must use physical device for Push Notifications');
@@ -57,8 +57,6 @@ export async function registerForPushNotificationsAsync() {
 export function setupNotificationHandlers() {
   // Handle notifications received while the app is foregrounded
   Notifications.addNotificationReceivedListener(notification => {
-    console.log('[NOTIFICATIONS] Notification received:', notification);
-    // You can process the notification data here, e.g., update UI
   });
 
   // Handle user interaction with notifications (e.g., tap on notification)

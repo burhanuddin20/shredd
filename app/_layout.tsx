@@ -19,21 +19,16 @@ export default function RootLayout() {
   useEffect(() => {
     // Register for push notifications
     registerForPushNotificationsAsync().then((token) => {
-      if (token) {
-        console.log('[NOTIFICATIONS] Registered for push notifications with token:', token);
-        // You might want to send this token to your backend
-      } else {
+      if (!token) {
         console.log('[NOTIFICATIONS] Failed to get push token.');
-      }
+      } 
     });
 
     // Set up notification handlers
     setupNotificationHandlers();
 
-    // Clean up notification handlers when component unmounts
     return () => {
-      // Notifications.removeNotificationSubscription(notificationReceivedListener);
-      // Notifications.removeNotificationSubscription(notificationResponseReceivedListener);
+   
     };
   }, []);
 

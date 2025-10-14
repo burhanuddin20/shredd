@@ -70,7 +70,7 @@ export default function SettingsScreen() {
       if (!settings.notifications) { // If turning notifications ON
         registerForPushNotificationsAsync().then(token => {
           if (token) {
-            console.log('[SETTINGS] Push notifications enabled. Token:', token);
+            // console.log('[SETTINGS] Push notifications enabled. Token:', token);
             // Re-schedule all sub-notifications that are currently enabled
             if (settings.reminderNotifications) schedulePushNotification('Fast Reminder', 'Time to start your fast!');
             if (settings.achievementNotifications) schedulePushNotification('Achievement Unlocked', 'You earned an achievement!');
@@ -83,7 +83,7 @@ export default function SettingsScreen() {
         });
       } else { // If turning notifications OFF
         cancelAllScheduledNotifications();
-        console.log('[SETTINGS] Push notifications disabled.');
+        // console.log('[SETTINGS] Push notifications disabled.');
       }
     } else if (key === 'reminderNotifications' || key === 'achievementNotifications' || key === 'streakReminders') {
       if (settings.notifications) { // Only schedule if main push notifications are enabled
