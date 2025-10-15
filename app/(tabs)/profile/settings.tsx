@@ -8,6 +8,7 @@ import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import * as Updates from 'expo-updates';
 import React, { useState } from 'react';
+import * as StoreReview from 'expo-store-review';
 import {
   Alert,
   Linking,
@@ -59,11 +60,6 @@ export default function SettingsScreen() {
       ...prev,
       [key]: !prev[key],
     }));
-
-    // Update haptic settings when haptics toggle changes
-    if (key === 'haptics') {
-      haptics.setEnabled(!settings.haptics);
-    }
 
     // Handle notification settings
     if (key === 'notifications') {
@@ -148,22 +144,41 @@ export default function SettingsScreen() {
 
   const handleContactSupport = () => {
     // todo handle this 
-    Linking.openURL('mailto:support@shredd.com?subject=Shredd Support');
+    Linking.openURL('mailto:shreddfasting@gmail.com?subject=Shredd Support');
   };
 
-  const handleRateApp = () => {
-    // todo handle this 
-    Alert.alert('Rate App', 'Thank you for using Shredd! Rating feature coming soon.');
+
+  const handleRateApp = async () => {
+    try {
+      const isAvailable = await StoreReview.isAvailableAsync();
+      if (isAvailable) {
+        await StoreReview.requestReview();
+      } else {
+        Alert.alert(
+          'Rate Shredd',
+          'You can rate us on the App Store — your feedback helps us improve!',
+          [
+            {
+              text: 'Open App Store',
+              onPress: () =>
+                // todo handle this 
+                Linking.openURL('https://apps.apple.com/app/idYOUR_APP_ID?action=write-review'),
+            },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error showing rate prompt:', error);
+    }
   };
 
   const handlePrivacyPolicy = () => {
-    // todo handle this 
-    Linking.openURL('https://shredd.com/privacy');
+    Linking.openURL('https://doc-hosting.flycricket.io/shredd-privacy-policy/6d4c7e2c-8dd3-4704-a3b7-a82acfe2e71c/privacy');
   };
 
   const handleTermsOfService = () => {
-    // todo handle this 
-    Linking.openURL('https://shredd.com/terms');
+    Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
   };
 
   const settingsSections: SettingsSection[] = [
@@ -213,15 +228,6 @@ export default function SettingsScreen() {
       id: 'preferences',
       title: 'Preferences',
       items: [
-        {
-          id: 'haptics',
-          title: 'Haptic Feedback',
-          subtitle: 'Vibration feedback for interactions',
-          type: 'toggle',
-          value: settings.haptics,
-          icon: 'iphone.radiowaves.left.and.right',
-          onToggle: (value) => handleToggle('haptics'),
-        },
         {
           id: 'autoStartTimer',
           title: 'Auto-Start Timer',
