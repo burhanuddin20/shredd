@@ -8,6 +8,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -21,9 +23,6 @@ export async function registerForPushNotificationsAsync() {
   if (Platform.OS === 'android') {
     Notifications.setNotificationChannelGroupAsync('default', {
       name: 'Default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
     });
   }
 
@@ -76,12 +75,15 @@ export function setupNotificationHandlers() {
  * @returns The ID of the scheduled notification.
  */
 export async function schedulePushNotification(title: string, body: string, data?: any, scheduleTime?: Date) {
-  const trigger = scheduleTime ? { date: scheduleTime } : { seconds: 1 };
+  const trigger: Notifications.NotificationTriggerInput = scheduleTime
+    ? ({ date: scheduleTime, type: 'date' } as Notifications.DateTriggerInput)
+    : ({ seconds: 1, type: 'timeInterval' } as Notifications.TimeIntervalTriggerInput);
+
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title,
       body,
-      data,
+      data: data || {},
     },
     trigger,
   });

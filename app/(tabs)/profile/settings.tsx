@@ -223,15 +223,6 @@ export default function SettingsScreen() {
           onToggle: (value) => handleToggle('haptics'),
         },
         {
-          id: 'soundEffects',
-          title: 'Sound Effects',
-          subtitle: 'Audio feedback for timer and achievements',
-          type: 'toggle',
-          value: settings.soundEffects,
-          icon: 'speaker.wave.2.fill',
-          onToggle: (value) => handleToggle('soundEffects'),
-        },
-        {
           id: 'autoStartTimer',
           title: 'Auto-Start Timer',
           subtitle: 'Automatically start timer when fast begins',
